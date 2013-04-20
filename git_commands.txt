@@ -21,6 +21,7 @@ For daily work:
     #git status
     #git add hi.c hello.c (these new or modified files will be commited next)
     #git checkout -- hurray.c (to undo changes in hurray.c)
+    #git rm --cached somefile.txt (untrack a tracked file)
     #git status
     #git commit -m "comment"
     #git clean -dnx | cut -c 14- (to check unversioned files and dirs)
@@ -57,5 +58,5 @@ merge from a upstream branch to local branch
 	#git merge --no-ff upstream/development
 	#git mergetool
 
-untrack a tracked file
-	#git rm --cached projectFile.txt
+
+

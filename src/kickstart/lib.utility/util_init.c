@@ -58,7 +58,7 @@ INT32 util_Random(pUtility UtilBase);
 void util_SRandom(pUtility UtilBase,UINT32 seed);
 void util_SRand(pUtility UtilBase, UINT32 seed);
 
-static volatile APTR FuncTab[] = 
+static volatile APTR FuncTab[] =
 {
 	(void(*)) util_OpenLib,
 	(void(*)) util_CloseLib,
@@ -104,15 +104,35 @@ static volatile APTR FuncTab[] =
 	(APTR) ((UINT32)-1)
 };
 
+static const struct UtilityBase UtilityData =
+{
+	.Library.lib_Node.ln_Name = (APTR)&name[0],
+	.Library.lib_Node.ln_Type = NT_LIBRARY,
+	.Library.lib_Node.ln_Pri = 103,
+
+	.Library.lib_OpenCnt = 0,
+	.Library.lib_Flags = LIBF_SUMUSED|LIBF_CHANGED,
+	.Library.lib_NegSize = 0,
+	.Library.lib_PosSize = 0,
+	.Library.lib_Version = LIBRARY_VERSION,
+	.Library.lib_Revision = LIBRARY_REVISION,
+	.Library.lib_Sum = 0,
+	.Library.lib_IDString = (APTR)&version[7],
+
+	// Initialize the two random generators.
+	.RandSeed = 937186357,
+	.SeedNext = 1
+};
+
 static const volatile APTR InitTab[4]=
 {
 	(APTR)sizeof(struct UtilityBase),
 	(APTR)FuncTab,
-	(APTR)NULL,
+	(APTR)&UtilityData,
 	(APTR)util_Init
 };
 
-static const volatile struct Resident ROMTag = 
+static const volatile struct Resident ROMTag =
 {
 	RTC_MATCHWORD,
 	(struct Resident *)&ROMTag,
@@ -127,7 +147,7 @@ static const volatile struct Resident ROMTag =
 	&InitTab
 };
 
-static struct TagItem utilTags[] = 
+static struct TagItem utilTags[] =
 {
 	{ANO_NameSpace, 1},
 	{TAG_DONE, 0}
@@ -135,19 +155,9 @@ static struct TagItem utilTags[] =
 
 static pUtility util_Init(pUtility UtilBase, UINT32 *segList, APTR SysBase)
 {
-	UtilBase->Library.lib_OpenCnt = 0;
-	UtilBase->Library.lib_Node.ln_Pri = 0;
-	UtilBase->Library.lib_Node.ln_Type = NT_LIBRARY;
-	UtilBase->Library.lib_Node.ln_Name = (STRPTR)name;
-	UtilBase->Library.lib_Version = LIBRARY_VERSION;
-	UtilBase->Library.lib_Revision = LIBRARY_REVISION;
-	UtilBase->Library.lib_IDString = (STRPTR)&version[7];	
 	UtilBase->SysBase	= SysBase;
-	
 	UtilBase->RootSpace = AllocNamedObjectA((STRPTR)"rootspace", utilTags);
-	// Initialize the two random generators.
-	UtilBase->RandSeed = 937186357;
-	UtilBase->SeedNext = 1;
+
 	return UtilBase;
 }
 

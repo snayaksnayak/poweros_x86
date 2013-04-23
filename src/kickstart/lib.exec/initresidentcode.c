@@ -27,13 +27,10 @@ void lib_InitResidentCode(struct SysBase * SysBase, UINT32 startClass)
 	{
         if (res->rn_Resident->rt_Flags & startClass)
         {
-			DPrintF("InitResident %s (%x)\n", res->rn_Resident->rt_Name,res->rn_Resident);
+			DPrintF("InitResidentCode %s \n", res->rn_Resident->rt_Name);
             if (InitResident(res->rn_Resident, NULL)== NULL)
             {
-				DPrintF("[INIT] InitResidentCode Scanner Failed \n");
-				DPrintF("on Resident [%x] name: %s\n", res->rn_Resident, res->rn_Resident->rt_Name);
-				DPrintF("System is not halted, but no new modules loaded\n");
-				for(;;);
+				DPrintF("Module %s will not be loaded\n", res->rn_Resident->rt_Name);
             }
 		}
 	}

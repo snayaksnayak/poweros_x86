@@ -33,7 +33,7 @@ static const struct TestBase TestLibData =
   .TestLib.lib_Node.ln_Pri = -100,
 
   .TestLib.lib_OpenCnt = 0,
-  .TestLib.lib_Flags = 0,
+  .TestLib.lib_Flags = LIBF_SUMUSED|LIBF_CHANGED,
   .TestLib.lib_NegSize = 0,
   .TestLib.lib_PosSize = 0,
   .TestLib.lib_Version = DEVICE_VERSION,
@@ -709,6 +709,7 @@ void d_showint(int addr, struct SysBase *SysBase)
 }
 #endif
 void test_new_memory();
+void test_library();
 
 static void test_TestTask(APTR data, struct SysBase *SysBase)
 {
@@ -744,8 +745,10 @@ static void test_TestTask(APTR data, struct SysBase *SysBase)
 //for(;;);
 
 //	asm("cli");
-	test_MousePointer(SysBase);
+	test_library(SysBase);
 	goto out;
+
+	test_MousePointer(SysBase);
 
 //	test_cgfx(SysBase);
 

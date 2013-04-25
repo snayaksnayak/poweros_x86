@@ -9,6 +9,9 @@ static const char EndResident;
 #define LIBRARY_VERSION 0
 #define LIBRARY_REVISION 1
 
+#define add(a,b) (((INT32(*)(APTR, INT32, INT32)) _GETVECADDR(MyLibBase, 5))(MyLibBase, a, b))
+#define sub(a,b) (((INT32(*)(APTR, INT32, INT32)) _GETVECADDR(MyLibBase, 6))(MyLibBase, a, b))
+
 struct mylib
 {
 	struct Library lib;
@@ -18,6 +21,9 @@ struct mylib
 	int add;
 	int sub;
 };
+
+int mylib_add(struct mylib* mylib_p, int a, int b);
+int mylib_sub(struct mylib* mylib_p, int a, int b);
 
 static const struct mylib mylib_data =
 {
@@ -64,12 +70,16 @@ APTR mylib_ExtFuncLib(struct mylib* mylib_p)
 
 int mylib_add(struct mylib* mylib_p, int a, int b)
 {
+	APTR SysBase = mylib_p->SysBase;
+	DPrintF("add: mylib sysbase is: %p\n", mylib_p->SysBase);
 	mylib_p->add = a+b;
 	return mylib_p->add;
 }
 
 int mylib_sub(struct mylib* mylib_p, int a, int b)
 {
+	APTR SysBase = mylib_p->SysBase;
+	DPrintF("sub: mylib sysbase is: %p\n", SysBase);
 	mylib_p->sub = a-b;
 	return mylib_p->sub;
 }
@@ -127,17 +137,18 @@ void test_library(APTR SysBase)
 	{
 		AddLibrary(library);
 		DPrintF("mylib addlib done\n");
-		struct Library *l = NULL;
-		l = OpenLibrary("mylib.library", 0);
-		if(l != 0)
+		struct Library* MyLibBase = NULL;
+		MyLibBase = OpenLibrary("mylib.library", 0);
+		if(MyLibBase != 0)
 		{
-			DPrintF("after open, mylib ptr is: %p\n", l);
-			int c = mylib_add((APTR)l, 2, 3);
+			DPrintF("after open, mylib ptr is: %p\n", MyLibBase);
+			int c = add(2, 3);
 			DPrintF("after add, answer is: %d\n", c);
-			c = mylib_sub((APTR)l, 9, 7);
+			c = sub(9, 7);
 			DPrintF("after sub, answer is: %d\n", c);
 		}
-		CloseLibrary(l);
+		CloseLibrary(MyLibBase);
 	}
 	RemLibrary(library);
+	DisposeLibrary(library);
 }

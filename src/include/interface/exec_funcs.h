@@ -73,6 +73,7 @@ void CloseLibrary(struct Library *library);
 void AddLibrary(struct Library *library);
 UINT32 RemLibrary( struct Library *library);
 void SumLibrary( struct Library *library);
+void DisposeLibrary(struct Library *library);
 
 void Alert(UINT32 alertNum, const char *fmt, ...);
 
@@ -251,4 +252,5 @@ void *CopyMemQuick(const APTR src, APTR dest, int n);
 #define CopyMemQuick(x, y, z)	(((APTR(*)(APTR, APTR, APTR, INT32))				_GETVECADDR(SysBase, 91))(SysBase,x, y, z))
 
 #define AvailMem(x)				(((UINT32(*)(APTR, UINT32))				_GETVECADDR(SysBase, 92))(SysBase,x))
+#define DisposeLibrary(x)		(((void(*)(APTR, struct Library *))				_GETVECADDR(SysBase, 93))(SysBase,x))
 #endif

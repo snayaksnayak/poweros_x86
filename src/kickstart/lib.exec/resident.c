@@ -129,3 +129,11 @@ void lib_MakeFunctions(SysBase *SysBase, APTR target, APTR functionArray, UINT32
 
 }
 
+void lib_DisposeLibrary(SysBase *SysBase, struct Library* library)
+{
+	if(library)
+	{
+		library = (struct Library *)((char *)library - library->lib_NegSize);
+		FreeVec(library);
+	}
+}

@@ -7,7 +7,7 @@ APTR FuncTab[] =
 	(void(*)) lib_CloseLib,
 	(void(*)) lib_ExpungeLib,
 	(void(*)) lib_ExtFuncLib,
-	
+
 	(void(*)) lib_Permit,
 	(void(*)) lib_Forbid,
 	(void(*)) lib_Enable,
@@ -31,7 +31,7 @@ APTR FuncTab[] =
 	(void(*)) lib_Deallocate,
 	(void(*)) lib_AllocVec,
 	(void(*)) lib_FreeVec,
-	
+
 	(void(*)) lib_Schedule,
 	(void(*)) NULL,  // Dispatch
 
@@ -60,7 +60,7 @@ APTR FuncTab[] =
 	(void(*)) lib_WaitPort,
 	(void(*)) lib_CreateMsgPort,
 	(void(*)) lib_DeleteMsgPort,
-	
+
 	(void(*)) lib_AllocSignal,
 	(void(*)) lib_FreeSignal,
 
@@ -111,6 +111,8 @@ APTR FuncTab[] =
 	(void(*)) lib_RawMayGetChar,
 	(void(*)) lib_CopyMemQuick,
 	(void(*)) lib_AvailMem,
+
+	(void(*)) lib_DisposeLibrary,
 	(APTR) ((INT32)-1)
 };
 

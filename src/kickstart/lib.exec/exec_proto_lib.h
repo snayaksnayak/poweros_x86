@@ -81,6 +81,7 @@ void lib_CloseLibrary(SysBase *SysBase,struct Library *library);
 void lib_AddLibrary(SysBase *SysBase,struct Library *library);
 UINT32 lib_RemLibrary(SysBase *SysBase, struct Library *library);
 void lib_SumLibrary(SysBase *SysBase, struct Library *library);
+void lib_DisposeLibrary(SysBase *SysBase, struct Library *library);
 
 void lib_Alert(SysBase *SysBase, UINT32 alertNum, const char *fmt, ...);
 

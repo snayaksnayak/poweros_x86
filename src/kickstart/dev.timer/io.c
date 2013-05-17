@@ -1,13 +1,17 @@
 #include "exec_funcs.h"
 #include "timer_intern.h"
 
+#define SysBase TimerBase->Timer_SysBase
+
 void TimerInvalid(TimerBase *TimerBase, struct IORequest *ioreq)
 {
+	DPrintF("Inside TimerInvalid!\n");
 	INTERN_EndCommand(TimerBase, IOERR_NOCMD, ioreq);
 }
 
 void TimerAddRequest(TimerBase *TimerBase, struct IORequest *ioreq)
 {
+	DPrintF("Inside TimerAddRequest!\n");
 	struct TimerUnit* tu;
 	tu = (struct TimerUnit *)((struct TimeRequest*)ioreq)->tr_node.io_Unit;
 	((void(*)(struct TimerBase *, struct IORequest *))tu->AddRequest)(TimerBase, ioreq);
@@ -15,6 +19,7 @@ void TimerAddRequest(TimerBase *TimerBase, struct IORequest *ioreq)
 
 void TimerGetSysTime(TimerBase *TimerBase, struct IORequest *ioreq)
 {
+	DPrintF("Inside TimerGetSysTime!\n");
 	((struct TimeRequest*)ioreq)->tr_time.tv_micro = TimerBase->CurrentTime.tv_micro;
 	((struct TimeRequest*)ioreq)->tr_time.tv_secs  = TimerBase->CurrentTime.tv_secs;
 
@@ -23,9 +28,14 @@ void TimerGetSysTime(TimerBase *TimerBase, struct IORequest *ioreq)
 
 void TimerSetSysTime(TimerBase *TimerBase, struct IORequest *ioreq)
 {
+	DPrintF("Inside TimerSetSysTime!\n");
 	UINT32 ipl = Disable();
-	TimerBase->CurrentTime.tv_micro= ((struct TimeRequest*)ioreq)->tr_time.tv_micro;
+	DPrintF("TimerBase->CurrentTime.tv_secs = %d\n", TimerBase->CurrentTime.tv_secs);
+	DPrintF("TimerBase->CurrentTime.tv_micro = %d\n", TimerBase->CurrentTime.tv_micro);
+	DPrintF("((struct TimeRequest*)ioreq)->tr_time.tv_secs = %d\n", ((struct TimeRequest*)ioreq)->tr_time.tv_secs);
+	DPrintF("((struct TimeRequest*)ioreq)->tr_time.tv_micro = %d\n", ((struct TimeRequest*)ioreq)->tr_time.tv_micro);
 	TimerBase->CurrentTime.tv_secs = ((struct TimeRequest*)ioreq)->tr_time.tv_secs;
+	TimerBase->CurrentTime.tv_micro= ((struct TimeRequest*)ioreq)->tr_time.tv_micro;
 	Enable(ipl);
 
 	INTERN_EndCommand(TimerBase, 0, (struct IORequest *)ioreq);

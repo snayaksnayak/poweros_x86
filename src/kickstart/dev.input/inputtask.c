@@ -10,7 +10,7 @@
 #include "inputdev.h"
 #include "sysbase.h"
 #include "exec_funcs.h"
-#include "timer_funcs.h"
+#include "timer.h"
 
 #define SysBase IDBase->SysBase
 
@@ -39,7 +39,7 @@ void IDSetMPort(struct IOStdReq *io, IDBase *IDBase)
 		UINT8 *tmp = (UINT8*)io->io_Data;
 		IDBase->id_MPort = tmp[0];
 		io->io_Actual = 1;
-		EndCommand(0, io, SysBase);			
+		EndCommand(0, io, SysBase);
 	}
 	EndCommand(IOERR_BADLENGTH, io, SysBase);
 }
@@ -51,7 +51,7 @@ void IDSetMType(struct IOStdReq *io, IDBase *IDBase)
 		UINT8 *tmp = (UINT8*)io->io_Data;
 		IDBase->id_MType = tmp[0];
 		io->io_Actual = 1;
-		EndCommand(0, io, SysBase);			
+		EndCommand(0, io, SysBase);
 	}
 	EndCommand(IOERR_BADLENGTH, io, SysBase);
 }
@@ -66,7 +66,7 @@ void IDSetMTrig(struct IOStdReq *io, IDBase *IDBase)
 		IDBase->id_MTrig.XDelta = mt->XDelta;
 		IDBase->id_MTrig.YDelta = mt->YDelta;
 		io->io_Actual = sizeof(MouseTrigger);
-		EndCommand(0, io, SysBase);			
+		EndCommand(0, io, SysBase);
 	}
 	EndCommand(IOERR_BADLENGTH, io, SysBase);
 }
@@ -75,19 +75,19 @@ void IDAddHandler(struct IOStdReq *io, IDBase *IDBase)
 {
 //	DPrintF("IDAddHandler\n");
 	Enqueue(&IDBase->id_HandlerList, (struct Node *)io->io_Data);
-	EndCommand(0, io, SysBase);	
+	EndCommand(0, io, SysBase);
 }
 
 void IDRemHandler(struct IOStdReq *io, IDBase *IDBase)
 {
 	Remove((struct Node *)io->io_Data);
-	EndCommand(0, io, SysBase);	
+	EndCommand(0, io, SysBase);
 }
 
 void IDWriteEvent(struct IOStdReq *io, IDBase *IDBase)
 {
 	DispatchEvents(IDBase, (struct InputEvent *)io->io_Data);
-	EndCommand(0, io, SysBase);	
+	EndCommand(0, io, SysBase);
 }
 
 void DispatchEvents(IDBase *IDBase, struct InputEvent *ie)
@@ -201,7 +201,7 @@ static void openGameport(IDBase *IDBase)
 	TypeMouse(IDBase);
 	TrigMouse(IDBase);
 	ReadMouse(IDBase);
-	return;	
+	return;
 }
 
 static void gotTimer(IDBase *IDBase)
@@ -273,18 +273,18 @@ static void CheckPort(UINT32 signalStart, UINT32 signalIE, IDBase *IDBase)
 					break;
 			}
 		}
-		
+
 		while((IDBase->Unit.unit_Flags & DUB_STOPPED) != 0)
 		{
 			sig = Wait(signalStart);
-			if ((IDBase->Unit.unit_Flags & DUB_STOPPED) == 0) 
+			if ((IDBase->Unit.unit_Flags & DUB_STOPPED) == 0)
 			{
 				if (sig & signalIE) SetSignal(signalIE, signalIE);
 				break;
 			}
 		}
 		sig = Wait(signalIE|signalStart);
-		
+
 		if (sig & (1<<(IDBase->id_IEPort.mp_SigBit)))
 		{
 			struct Message *msg = GetMsg(&IDBase->id_IEPort);
@@ -334,13 +334,13 @@ UINT32 idev_InputTask(IDBase *IDBase, APTR SysBase)
 	INT8 signalIE;
 	signalUnit = id_InitMsgPort(&IDBase->Unit.unit_MsgPort, SysBase);
 
-	struct MsgPort *port = &IDBase->id_IEPort;	
+	struct MsgPort *port = &IDBase->id_IEPort;
 	IDBase->id_TIOR.tr_node.io_Message.mn_ReplyPort = port;
 	IDBase->id_MIOR.io_Message.mn_ReplyPort			= port;
 	IDBase->id_K1IOR.io_Message.mn_ReplyPort 		= port;
 	IDBase->id_K2IOR.io_Message.mn_ReplyPort 		= port;
 	IDBase->id_RIOR.tr_node.io_Message.mn_ReplyPort = port;
-	signalIE = id_InitMsgPort(port, SysBase);	
+	signalIE = id_InitMsgPort(port, SysBase);
 
 	IDBase->id_TIOR.tr_node.io_Message.mn_Length= 1;
 	IDBase->id_MIOR.io_Message.mn_Length  		= 2;
@@ -350,9 +350,9 @@ UINT32 idev_InputTask(IDBase *IDBase, APTR SysBase)
 
 	Signal(IDBase->id_BootTask, SIGF_SINGLE);
 	//Wait for someone to use us.
-	//UINT32 rcvd = 
+	//UINT32 rcvd =
 	Wait((1<<signalUnit)|(1<<signalIE));
-	
+
 	openGameport(IDBase);
 	readTimer(IDBase);
 	readKeyboard(IDBase);

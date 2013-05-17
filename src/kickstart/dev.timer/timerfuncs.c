@@ -1,6 +1,8 @@
 #include "exec_funcs.h"
 #include "timer_intern.h"
 
+#define SysBase TimerBase->Timer_SysBase
+
 void timer_BeginIO(TimerBase *TimerBase, struct IORequest *ioreq)
 {
 	UINT8 cmd = ioreq->io_Command;
@@ -22,18 +24,20 @@ void timer_AbortIO(TimerBase *TimerBase, struct IORequest *ioreq)
 
 INT32 timer_CmpTime(struct TimerBase *TimerBase, struct TimeVal *src, struct TimeVal *dest)
 {
+	DPrintF("Inside timer_CmpTime!\n");
     INT32 diff;
 
     if (dest->tv_secs == src->tv_secs) diff = src->tv_micro - dest->tv_micro;
     else diff = src->tv_secs - dest->tv_secs;
 
-    if (diff < 0) return -1;
-    else if (diff > 0) return 1;
-    else return 0;
+    if (diff < 0) return -1; // first argument smaller
+    else if (diff > 0) return 1; // first argument bigger
+    else return 0; // both arguments equal
 }
 
 void timer_AddTime(struct TimerBase *TimerBase, struct TimeVal *src, struct TimeVal *dst)
 {
+	DPrintF("Inside timer_AddTime!\n");
 	dst->tv_micro += src->tv_micro;
 	dst->tv_secs  += src->tv_secs;
 	while(dst->tv_micro > 999999)
@@ -45,6 +49,7 @@ void timer_AddTime(struct TimerBase *TimerBase, struct TimeVal *src, struct Time
 
 void timer_SubTime(struct TimerBase *TimerBase, struct TimeVal *src, struct TimeVal *dest)
 {
+	DPrintF("Inside timer_SubTime!\n");
     while(src->tv_micro > 999999)
     {
 		src->tv_secs++;
@@ -68,6 +73,7 @@ void timer_SubTime(struct TimerBase *TimerBase, struct TimeVal *src, struct Time
 
 void timer_GetSysTime(struct TimerBase *TimerBase, struct TimeVal *src)
 {
+	DPrintF("Inside timer_GetSysTime!\n");
 	UINT32 ipl = Disable();
 	src->tv_micro = TimerBase->CurrentTime.tv_micro;
 	src->tv_secs  = TimerBase->CurrentTime.tv_secs;
@@ -76,6 +82,7 @@ void timer_GetSysTime(struct TimerBase *TimerBase, struct TimeVal *src)
 
 UINT32 timer_ReadEClock(struct TimerBase *TimerBase, struct EClockVal *src)
 {
+	DPrintF("Inside timer_ReadEClock!\n");
 	return 0;
 //	src->ev_lo = READ32(ST_BASE+0x04);
 //	src->ev_hi = READ32(ST_BASE+0x08);

@@ -1,4 +1,24 @@
+#include "exec_funcs.h"
 #include "timer_intern.h"
+
+void timer_BeginIO(TimerBase *TimerBase, struct IORequest *ioreq)
+{
+	UINT8 cmd = ioreq->io_Command;
+	ioreq->io_Error = 0;
+
+	if (cmd > TR_SETSYSTIME || cmd < TR_ADDREQUEST) cmd = 0; // Invalidate the command.
+
+	TimerCmdVector[cmd](TimerBase, ioreq);
+}
+
+void timer_AbortIO(TimerBase *TimerBase, struct IORequest *ioreq)
+{
+	if(ioreq->io_Message.mn_Node.ln_Type != NT_REPLYMSG)
+    {
+		Remove((struct Node *)ioreq);
+		INTERN_EndCommand(TimerBase, IOERR_ABORTED, ioreq);
+	}
+}
 
 INT32 timer_CmpTime(struct TimerBase *TimerBase, struct TimeVal *src, struct TimeVal *dest)
 {
@@ -44,5 +64,23 @@ void timer_SubTime(struct TimerBase *TimerBase, struct TimeVal *src, struct Time
     dest->tv_micro -= src->tv_micro;
     dest->tv_secs -= src->tv_secs;
 }
+
+
+void timer_GetSysTime(struct TimerBase *TimerBase, struct TimeVal *src)
+{
+	UINT32 ipl = Disable();
+	src->tv_micro = TimerBase->CurrentTime.tv_micro;
+	src->tv_secs  = TimerBase->CurrentTime.tv_secs;
+	Enable(ipl);
+}
+
+UINT32 timer_ReadEClock(struct TimerBase *TimerBase, struct EClockVal *src)
+{
+	return 0;
+//	src->ev_lo = READ32(ST_BASE+0x04);
+//	src->ev_hi = READ32(ST_BASE+0x08);
+//	return STC_FREQ_HZ;
+}
+
 
 

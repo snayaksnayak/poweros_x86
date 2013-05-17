@@ -304,12 +304,12 @@ static void test_Srini(SysBase *SysBase)
 	// Now we have everything setup.. Lets Proceed
 	io->tr_node.io_Command = TR_ADDREQUEST; /* add a new timer request */
 	io->tr_time.tv_micro = 0;
-	io->tr_time.tv_secs = 5;
+	io->tr_time.tv_secs = 15;
 
 	// post request to the timer -- will go to sleep till done
-	DPrintF("We will go 5 Seconds to sleep\n");
+	DPrintF("We will go 15 Seconds to sleep\n");
 	DoIO((struct IORequest *) io );
-	DPrintF("Return after 5 Seconds\n");
+	DPrintF("Return after 15 Seconds\n");
 }
 
 static void test_printit(INT32 chr, APTR SysBase)
@@ -745,8 +745,10 @@ static void test_TestTask(APTR data, struct SysBase *SysBase)
 //for(;;);
 
 //	asm("cli");
-	test_library(SysBase);
+	test_Srini(SysBase);
 	goto out;
+
+	test_library(SysBase);
 
 	test_MousePointer(SysBase);
 
@@ -763,7 +765,6 @@ static void test_TestTask(APTR data, struct SysBase *SysBase)
 hexdump(SysBase, 0x0, 100);
 
 	test_InputDev(SysBase);
-	test_Srini(SysBase);
 //test_new_memory();
 out:
 	DPrintF("[TESTTASK] Finished, we are leaving... bye bye... till next reboot\n");

@@ -7,8 +7,6 @@
 // Include our Protos
 #include "exec_funcs.h"
 
-//#define TIMERNAME "timer.device"
-
 static char DevName[] = "timer.device";
 static char Version[] = "\0$VER: timer.device 0.1 ("__DATE__")\r\n";
 #define TIMER_INT_PRI 0
@@ -53,20 +51,35 @@ struct TimerBase *timer_InitDev(struct TimerBase *TimerBase, UINT32 *segList, st
 {
 	TimerBase->Timer_SysBase = SysBase;
 
-	NewList((struct List *) &TimerBase->Lists[UNIT_MICROHZ] );
-	NewList((struct List *) &TimerBase->Lists[UNIT_VBLANK] );
-	NewList((struct List *) &TimerBase->Lists[UNIT_ECLOCK] );
-	NewList((struct List *) &TimerBase->Lists[UNIT_WAITUNTIL] );
-	NewList((struct List *) &TimerBase->Lists[UNIT_WAITECLOCK] );
+	for(int unit_num=0; unit_num < UNIT_MAX; unit_num++)
+	{
+		// Initialise Unit Command Queue
+		NewList((struct List *)&TimerBase->TimerUnit[unit_num].tu_unit.unit_MsgPort.mp_MsgList);
+		TimerBase->TimerUnit[unit_num].tu_unit.unit_MsgPort.mp_Node.ln_Name = (STRPTR)DevName;
+		TimerBase->TimerUnit[unit_num].tu_unit.unit_MsgPort.mp_Node.ln_Type = NT_MSGPORT;
+		TimerBase->TimerUnit[unit_num].tu_unit.unit_MsgPort.mp_SigTask = NULL;
 
-	//DPrintF("[Timer] TimerBase: %x, OpenDevice: %x\n", TimerBase, timer_BeginIO);
-	// VBL (100hz) Timer
+		// Initialize different behaviours of Units
+		switch(unit_num)
+		{
+		case UNIT_VBLANK:
+		case UNIT_MICROHZ:
+		case UNIT_ECLOCK:
+			TimerBase->TimerUnit[unit_num].AddRequest = AddDelay;
+			break;
+		case UNIT_WAITUNTIL:
+		case UNIT_WAITECLOCK:
+			TimerBase->TimerUnit[unit_num].AddRequest = AddAlarm;
+			break;
+		};
+	}
+
 	TimerBase->TimerVBLIntServer = CreateIntServer(DevName, TIMER_INT_PRI, TimerVBLIRQServer, TimerBase);
 	AddIntServer(IRQ_CLK, TimerBase->TimerVBLIntServer);
 
 	// EClock Timer
-//	TimerBase->Timer1IntServer = CreateIntServer(DevName, TIMER_INT_PRI, Timer1IRQServer, TimerBase);
-//	AddIntServer(IRQ_TIMER1, TimerBase->Timer1IntServer);
+	//TimerBase->Timer1IntServer = CreateIntServer(DevName, TIMER_INT_PRI, Timer1IRQServer, TimerBase);
+	//AddIntServer(IRQ_TIMER1, TimerBase->Timer1IntServer);
 
 	return TimerBase;
 }
@@ -89,7 +102,7 @@ static const struct TimerBase TimerDevData =
 	.CurrentTime.tv_micro = 0,
 
 	.VBlankTime.tv_secs = 0,
-	.VBlankTime.tv_micro = 1000000/TICK, //STC_FREQ_HZ / TICK; //TimerPeriod;
+	.VBlankTime.tv_micro = 1000000/TICK,
 
 	.Elapsed.tv_secs = 0,
 	.Elapsed.tv_micro = 0

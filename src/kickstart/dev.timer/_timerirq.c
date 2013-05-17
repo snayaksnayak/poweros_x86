@@ -12,42 +12,30 @@
 	(d)->tv_secs++;\
 	(d)->tv_micro -= 1000000;\
     }
-	
+
 __attribute__((no_instrument_function)) BOOL TimerVBLIRQServer(UINT32 number, TimerBase *TimerBase, APTR SysBase)
 {
 //	DPrintF("Testit\n");
 	FastAddTime(&TimerBase->CurrentTime, &TimerBase->VBlankTime);
 	FastAddTime(&TimerBase->Elapsed, &TimerBase->VBlankTime);
 	struct TimeRequest *tr, *trtmp;
-	ForeachNodeSafe(&TimerBase->Lists[UNIT_VBLANK], tr, trtmp)
+	for (int unit_num=0; unit_num < UNIT_MAX; unit_num++)
 	{
-		if ((tr->tr_time.tv_secs < TimerBase->Elapsed.tv_secs)
-		 ||((tr->tr_time.tv_secs <= TimerBase->Elapsed.tv_secs)
-		 && (tr->tr_time.tv_micro < TimerBase->Elapsed.tv_micro)))
+		ForeachNodeSafe(&TimerBase->TimerUnit[unit_num].tu_unit.unit_MsgPort.mp_MsgList, tr, trtmp)
 		{
-//			DPrintF("Found something\n");
-			Remove((struct Node *)tr);
-			tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
-			tr->tr_node.io_Error = 0;
-			ReplyMsg((struct Message *)tr);
-			break;
-		} 
+			if ((tr->tr_time.tv_secs < TimerBase->Elapsed.tv_secs)
+			 ||((tr->tr_time.tv_secs <= TimerBase->Elapsed.tv_secs)
+			 && (tr->tr_time.tv_micro < TimerBase->Elapsed.tv_micro)))
+			{
+				//DPrintF("Found something\n");
+				Remove((struct Node *)tr);
+				tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
+				tr->tr_node.io_Error = 0;
+				ReplyMsg((struct Message *)tr);
+			}
+		}
 	}
 
-	ForeachNodeSafe(&TimerBase->Lists[UNIT_WAITUNTIL], tr, trtmp)
-	{
-		if ((tr->tr_time.tv_secs < TimerBase->Elapsed.tv_secs)
-		 ||((tr->tr_time.tv_secs <= TimerBase->Elapsed.tv_secs)
-		 && (tr->tr_time.tv_micro < TimerBase->Elapsed.tv_micro)))
-		{
-			
-			Remove((struct Node *)tr);
-			tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
-			tr->tr_node.io_Error = 0;
-			ReplyMsg((struct Message *)tr);
-			break;
-		} 
-	}
 	return 0; // we return 0 so that Tick() can run, otherwise we would cut off Schedule()
 }
 
@@ -60,11 +48,11 @@ __attribute__((no_instrument_function)) BOOL Timer1IRQServer(UINT32 number, APTR
 
 	ForeachNodeSafe(&TimerBase->Lists[UNIT_ECLOCK], tr, trtmp)
 	{
-		tmp = (struct EClockVal *) &tr->tr_time;		
-		if 	((tmp->ev_Lo < tmp2.ev_Lo) 
+		tmp = (struct EClockVal *) &tr->tr_time;
+		if 	((tmp->ev_Lo < tmp2.ev_Lo)
 			|| ((tmp->ev_Lo <= tmp2.ev_Lo)
 			&& (tmp->ev_Hi < tmp2.ev_Lo)))
-		{		
+		{
 			Remove((struct Node *)tr);
 			tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
 			tr->tr_node.io_Error = 0;
@@ -75,11 +63,11 @@ __attribute__((no_instrument_function)) BOOL Timer1IRQServer(UINT32 number, APTR
 
 	ForeachNodeSafe(&TimerBase->Lists[UNIT_WAITECLOCK], tr, trtmp)
 	{
-		tmp = (struct EClockVal *) &tr->tr_time;		
-		if 	((tmp->ev_Lo < tmp2.ev_Lo) 
+		tmp = (struct EClockVal *) &tr->tr_time;
+		if 	((tmp->ev_Lo < tmp2.ev_Lo)
 			|| ((tmp->ev_Lo <= tmp2.ev_Lo)
 			&& (tmp->ev_Hi < tmp2.ev_Lo)))
-		{		
+		{
 			Remove((struct Node *)tr);
 			tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
 			tr->tr_node.io_Error = 0;

@@ -7,8 +7,6 @@ struct TimerBase *timer_OpenDev(struct TimerBase *TimerBase, struct IORequest *i
 
     TimerBase->Device.dd_Library.lib_OpenCnt++;
     TimerBase->Device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
-    ioreq->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-
     switch(unitNum)
     {
 	case UNIT_VBLANK:
@@ -17,7 +15,7 @@ struct TimerBase *timer_OpenDev(struct TimerBase *TimerBase, struct IORequest *i
 	case UNIT_WAITUNTIL:
 	case UNIT_WAITECLOCK:
 	    ioreq->io_Error = 0;
-	    ioreq->io_Unit = (struct Unit *)unitNum;
+	    ioreq->io_Unit = (struct  Unit *)&TimerBase->TimerUnit[unitNum];
 	    ioreq->io_Device = (struct Device *)TimerBase;
 	    break;
 	default:
@@ -34,17 +32,19 @@ APTR timer_CloseDev(struct TimerBase *TimerBase, struct IORequest *ioreq)
 	{
 		// Should we "expunge" the device?
 	}
-	return(NULL);
+	ioreq->io_Unit = NULL;
+	ioreq->io_Device = NULL;
+	return (TimerBase);
 }
 
-UINT32 *timer_ExpungeDev(struct TimerBase *TimerBase)
+APTR timer_ExpungeDev(struct TimerBase *TimerBase)
 {
-	return (UINT32 *)FALSE;
+	return (NULL);
 }
 
-UINT32 timer_ExtFuncDev(void)
+APTR timer_ExtFuncDev(void)
 {
-	return (0);
+	return (NULL);
 }
 
 

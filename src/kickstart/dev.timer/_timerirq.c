@@ -70,46 +70,24 @@ __attribute__((no_instrument_function)) BOOL TimerVBLIRQServer(UINT32 number, Ti
 	return 0; // we return 0 so that Tick() can run, otherwise we would cut off Schedule()
 }
 
-__attribute__((no_instrument_function)) BOOL Timer1IRQServer(UINT32 number, APTR istate, TimerBase *TimerBase, APTR SysBase)
+static __inline__ void
+outb(UINT16 port, UINT8 value)
 {
-/* Have to think about this.
-	struct EClockVal *tmp, tmp2;
-	struct TimeRequest *tr, *trtmp;
-	timer_ReadEClock(TimerBase, &tmp2);
+   __asm__ __volatile__ ("outb %0, %1" : :"a" (value), "d" (port));
+}
 
-	ForeachNodeSafe(&TimerBase->Lists[UNIT_ECLOCK], tr, trtmp)
-	{
-		tmp = (struct EClockVal *) &tr->tr_time;
-		if 	((tmp->ev_Lo < tmp2.ev_Lo)
-			|| ((tmp->ev_Lo <= tmp2.ev_Lo)
-			&& (tmp->ev_Hi < tmp2.ev_Lo)))
-		{
-			Remove((struct Node *)tr);
-			tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
-			tr->tr_node.io_Error = 0;
-			ReplyMsg((struct Message *)tr);
-			break;
-		}
-	}
+static __inline__ UINT8
+inb(UINT16 port)
+{
+   UINT8 value;
+   __asm__ __volatile__ ("inb %1, %0" :"=a" (value) :"d" (port));
+   return value;
+}
 
-	ForeachNodeSafe(&TimerBase->Lists[UNIT_WAITECLOCK], tr, trtmp)
-	{
-		tmp = (struct EClockVal *) &tr->tr_time;
-		if 	((tmp->ev_Lo < tmp2.ev_Lo)
-			|| ((tmp->ev_Lo <= tmp2.ev_Lo)
-			&& (tmp->ev_Hi < tmp2.ev_Lo)))
-		{
-			Remove((struct Node *)tr);
-			tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
-			tr->tr_node.io_Error = 0;
-			ReplyMsg((struct Message *)tr);
-			break;
-		}
-	}
-	if ((IsListEmpty(&TimerBase->Lists[UNIT_WAITECLOCK]) && (IsListEmpty(&TimerBase->Lists[UNIT_WAITECLOCK]))
-	{
-		//DisableTimer1Int(); we dont use it anymore
-	}
-	*/
-	return 1; // we return 1 noone else should use this timer!
+__attribute__((no_instrument_function)) BOOL TimerRTCIRQServer(UINT32 number, TimerBase *TimerBase, APTR SysBase)
+{
+	outb(0x70, 0x0C);	// select register C
+	inb(0x71);
+	DPrintF("got TimerRTCIRQServer\n");
+	return 0; // we return 0 so that Tick() can run, otherwise we would cut off Schedule()
 }

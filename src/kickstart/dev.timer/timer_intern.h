@@ -5,6 +5,8 @@
 #include "device.h"
 #include "io.h"
 
+#define IRQ_RTC 8
+
 /* Units */
 #define UNIT_MICROHZ    0
 #define UNIT_VBLANK     1

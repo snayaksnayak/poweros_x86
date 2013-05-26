@@ -24,8 +24,8 @@ void timer_AddTime(struct TimerBase *TimerBase, struct TimeVal *src, struct Time
 void timer_SubTime(struct TimerBase *TimerBase, struct TimeVal *src, struct TimeVal *dst);
 void timer_GetSysTime(struct TimerBase *TimerBase, struct TimeVal *src);
 UINT32 timer_ReadEClock(struct TimerBase *TimerBase, struct EClockVal *src);
-__attribute__((no_instrument_function)) BOOL TimerVBLIRQServer(UINT32 number, APTR regs, TimerBase *TimerBase, APTR SysBase);
-//__attribute__((no_instrument_function)) BOOL Timer3IRQServer(UINT32 number, istate* istate, TimerBase *TimerBase, APTR SysBase);
+__attribute__((no_instrument_function)) BOOL TimerVBLIRQServer(UINT32 number, TimerBase *TimerBase, APTR SysBase);
+__attribute__((no_instrument_function)) BOOL TimerRTCIRQServer(UINT32 number, TimerBase *TimerBase, APTR SysBase);
 
 
 APTR timer_FuncTab[] =
@@ -46,6 +46,59 @@ APTR timer_FuncTab[] =
 
  (APTR) ((UINT32)-1)
 };
+
+static __inline__ void
+outb(UINT16 port, UINT8 value)
+{
+   __asm__ __volatile__ ("outb %0, %1" : :"a" (value), "d" (port));
+}
+
+static __inline__ UINT8
+inb(UINT16 port)
+{
+   UINT8 value;
+   __asm__ __volatile__ ("inb %1, %0" :"=a" (value) :"d" (port));
+   return value;
+}
+
+void NMI_enable(void)
+{
+	outb(0x70, inb(0x70)&0x7F);
+}
+
+void NMI_disable(void)
+{
+	outb(0x70, inb(0x70)|0x80);
+}
+
+
+
+void start_irq_8(struct TimerBase *TimerBase)
+{
+	SysBase* SysBase;
+	SysBase = TimerBase->Timer_SysBase;
+	UINT32 ipl;
+	UINT8 rate = 15; //9
+	UINT8 prevA, prevB;
+
+	ipl = Disable();
+
+NMI_disable();
+outb(0x70, 0x8A);		// set index to register A, disable NMI
+prevA=inb(0x71);	// get initial value of register A
+outb(0x70, 0x8A);// reset index to A
+outb(0x71, (prevA & 0xF0) | (rate & 0x0F)); //write only our rate to A. Note, rate is the bottom 4 bits.
+
+outb(0x70, 0x8B);		// select register B, and disable NMI
+prevB=inb(0x71);	// read the current value of register B
+outb(0x70, 0x8B);		// set the index again (a read will reset the index to register D)
+outb(0x71, prevB | 0x40);	// write the previous value ORed with 0x40. This turns on bit 6 of register B
+NMI_enable();
+
+	Enable(ipl);
+
+
+}
 
 struct TimerBase *timer_InitDev(struct TimerBase *TimerBase, UINT32 *segList, struct SysBase *SysBase)
 {
@@ -77,9 +130,11 @@ struct TimerBase *timer_InitDev(struct TimerBase *TimerBase, UINT32 *segList, st
 	TimerBase->TimerVBLIntServer = CreateIntServer(DevName, TIMER_INT_PRI, TimerVBLIRQServer, TimerBase);
 	AddIntServer(IRQ_CLK, TimerBase->TimerVBLIntServer);
 
-	// EClock Timer
-	//TimerBase->Timer1IntServer = CreateIntServer(DevName, TIMER_INT_PRI, Timer1IRQServer, TimerBase);
-	//AddIntServer(IRQ_TIMER1, TimerBase->Timer1IntServer);
+	//EClock Timer
+	TimerBase->TimerECLOCKIntServer = CreateIntServer(DevName, TIMER_INT_PRI, TimerRTCIRQServer, TimerBase);
+	AddIntServer(IRQ_RTC, TimerBase->TimerECLOCKIntServer);
+
+	start_irq_8(TimerBase);
 
 	return TimerBase;
 }

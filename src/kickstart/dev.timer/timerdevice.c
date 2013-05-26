@@ -4,23 +4,18 @@
 struct TimerBase *timer_OpenDev(struct TimerBase *TimerBase, struct IORequest *ioreq, UINT32 unitNum, UINT32 flags)
 {
 	//DPrintF("[TimerDev] Open Unit: %d\n", unitNum);
-
     TimerBase->Device.dd_Library.lib_OpenCnt++;
     TimerBase->Device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
-    switch(unitNum)
+    if (unitNum >= UNIT_VBLANK && unitNum <= UNIT_WAITECLOCK)
     {
-	case UNIT_VBLANK:
-	case UNIT_MICROHZ:
-	case UNIT_ECLOCK:
-	case UNIT_WAITUNTIL:
-	case UNIT_WAITECLOCK:
-	    ioreq->io_Error = 0;
+		ioreq->io_Error = 0;
 	    ioreq->io_Unit = (struct  Unit *)&TimerBase->TimerUnit[unitNum];
 	    ioreq->io_Device = (struct Device *)TimerBase;
-	    break;
-	default:
-	    ioreq->io_Error = IOERR_OPENFAIL;
-    }
+	}
+	else
+	{
+		ioreq->io_Error = IOERR_OPENFAIL;
+	}
 	//DPrintF("[TimerDev] Open Unit: %d\n", unitNum);
 	return(TimerBase);
 }

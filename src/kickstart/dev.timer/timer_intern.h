@@ -5,8 +5,6 @@
 #include "device.h"
 #include "io.h"
 
-#define IRQ_RTC 8
-
 /* Units */
 #define UNIT_MICROHZ    0
 #define UNIT_VBLANK     1
@@ -19,8 +17,6 @@
 #define TR_ADDREQUEST (CMD_NONSTD+0)
 #define TR_GETSYSTIME (CMD_NONSTD+1)
 #define TR_SETSYSTIME (CMD_NONSTD+2)
-
-#define SysBase TimerBase->Timer_SysBase
 
 #define VERSION  0
 #define REVISION 2

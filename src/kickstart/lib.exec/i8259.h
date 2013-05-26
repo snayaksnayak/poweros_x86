@@ -22,6 +22,7 @@
 #define IRQ_PIC1      2
 #define IRQ_NE2000    5
 #define IRQ_PIC_SPUR  7
+#define IRQ_RTC       8
 #define IRQ_MOUSE     12
 
 #endif

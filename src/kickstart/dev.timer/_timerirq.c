@@ -1,8 +1,5 @@
 #include "timer_intern.h"
 #include "list.h"
-
-#undef SysBase
-
 #include "exec_funcs.h"
 
 #define FastAddTime(d, s)\
@@ -70,24 +67,7 @@ __attribute__((no_instrument_function)) BOOL TimerVBLIRQServer(UINT32 number, Ti
 	return 0; // we return 0 so that Tick() can run, otherwise we would cut off Schedule()
 }
 
-static __inline__ void
-outb(UINT16 port, UINT8 value)
-{
-   __asm__ __volatile__ ("outb %0, %1" : :"a" (value), "d" (port));
-}
-
-static __inline__ UINT8
-inb(UINT16 port)
-{
-   UINT8 value;
-   __asm__ __volatile__ ("inb %1, %0" :"=a" (value) :"d" (port));
-   return value;
-}
-
 __attribute__((no_instrument_function)) BOOL TimerRTCIRQServer(UINT32 number, TimerBase *TimerBase, APTR SysBase)
 {
-	outb(0x70, 0x0C);	// select register C
-	inb(0x71);
-	DPrintF("got TimerRTCIRQServer\n");
 	return 0; // we return 0 so that Tick() can run, otherwise we would cut off Schedule()
 }

@@ -10,6 +10,8 @@ static char Version[] = "\0$VER: timer.device 0.1 ("__DATE__")\r\n";
 #define TIMER_INT_PRI 0
 #define TICK  100
 #define IRQ_CLK  0
+#define IRQ_RTC  8
+
 
 struct TimerBase *timer_OpenDev(struct TimerBase *TimerBase, struct IORequest *ioreq, UINT32 unitNum, UINT32 flags);
 APTR timer_CloseDev(struct TimerBase *TimerBase, struct IORequest *ioreq);
@@ -23,7 +25,7 @@ void timer_SubTime(struct TimerBase *TimerBase, struct TimeVal *src, struct Time
 void timer_GetSysTime(struct TimerBase *TimerBase, struct TimeVal *src);
 UINT32 timer_ReadEClock(struct TimerBase *TimerBase, struct EClockVal *src);
 __attribute__((no_instrument_function)) BOOL TimerVBLIRQServer(UINT32 number, TimerBase *TimerBase, APTR SysBase);
-__attribute__((no_instrument_function)) BOOL TimerRTCIRQServer(UINT32 number, TimerBase *TimerBase, APTR SysBase);
+__attribute__((no_instrument_function)) BOOL TimerMICROHZIRQServer(UINT32 number, TimerBase *TimerBase, APTR SysBase);
 void set_timer(UINT32 hz);
 UINT16 get_timer();
 
@@ -73,8 +75,15 @@ struct TimerBase *timer_InitDev(struct TimerBase *TimerBase, UINT32 *segList, st
 		};
 	}
 
+	//VBL Timer
 	TimerBase->TimerVBLIntServer = CreateIntServer(DevName, TIMER_INT_PRI, TimerVBLIRQServer, TimerBase);
-	AddIntServer(IRQ_CLK, TimerBase->TimerVBLIntServer);
+	AddIntServer(IRQ_RTC, TimerBase->TimerVBLIntServer);
+
+	//MICROHZ Timer
+	TimerBase->TimerMICROHZIntServer = CreateIntServer(DevName, TIMER_INT_PRI, TimerMICROHZIRQServer, TimerBase);
+	AddIntServer(IRQ_CLK, TimerBase->TimerMICROHZIntServer);
+	set_timer(0);
+/*
 	set_timer(0);
 	UINT16 val = 0;
 	val = get_timer();
@@ -86,10 +95,7 @@ struct TimerBase *timer_InitDev(struct TimerBase *TimerBase, UINT32 *segList, st
 	DPrintF("Now val = %d\n", val);
 	val = get_timer();
 	DPrintF("Now val = %d\n", val);
-	//EClock Timer
-	//TimerBase->TimerECLOCKIntServer = CreateIntServer(DevName, TIMER_INT_PRI, TimerRTCIRQServer, TimerBase);
-	//AddIntServer(IRQ_RTC, TimerBase->TimerECLOCKIntServer);
-	//start_irq_8(TimerBase);
+*/
 
 	return TimerBase;
 }

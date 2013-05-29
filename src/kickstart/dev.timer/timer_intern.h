@@ -60,7 +60,7 @@ typedef struct TimerBase
 
 	UINT32				TimerIRQ;
 	struct Interrupt	*TimerVBLIntServer;
-	struct Interrupt	*TimerECLOCKIntServer;
+	struct Interrupt	*TimerMICROHZIntServer;
 	struct TimeVal		TimerIntTime;
 
 	struct TimerUnit	TimerUnit[UNIT_MAX];

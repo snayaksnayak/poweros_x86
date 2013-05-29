@@ -1,6 +1,9 @@
 #include "exec_funcs.h"
 #include "timer_intern.h"
 
+void set_timer(UINT32 hz);
+UINT16 get_timer();
+
 #define SysBase TimerBase->Timer_SysBase
 
 void AddAlarm(TimerBase *TimerBase, struct IORequest *ioreq)

@@ -12,7 +12,7 @@
 
 __attribute__((no_instrument_function)) BOOL TimerVBLIRQServer(UINT32 number, TimerBase *TimerBase, APTR SysBase)
 {
-	//DPrintF("TimerVBLIRQServer\n");
+	DPrintF("TimerVBLIRQServer\n");
 	FastAddTime(&TimerBase->CurrentTime, &TimerBase->VBlankTime);
 	FastAddTime(&TimerBase->Elapsed, &TimerBase->VBlankTime);
 

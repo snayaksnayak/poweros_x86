@@ -25,6 +25,7 @@ UINT32 timer_ReadEClock(struct TimerBase *TimerBase, struct EClockVal *src);
 __attribute__((no_instrument_function)) BOOL TimerVBLIRQServer(UINT32 number, TimerBase *TimerBase, APTR SysBase);
 __attribute__((no_instrument_function)) BOOL TimerRTCIRQServer(UINT32 number, TimerBase *TimerBase, APTR SysBase);
 void set_timer(UINT32 hz);
+UINT16 get_timer();
 
 APTR timer_FuncTab[] =
 {
@@ -74,7 +75,17 @@ struct TimerBase *timer_InitDev(struct TimerBase *TimerBase, UINT32 *segList, st
 
 	TimerBase->TimerVBLIntServer = CreateIntServer(DevName, TIMER_INT_PRI, TimerVBLIRQServer, TimerBase);
 	AddIntServer(IRQ_CLK, TimerBase->TimerVBLIntServer);
-	set_timer(100);
+	set_timer(0);
+	UINT16 val = 0;
+	val = get_timer();
+	DPrintF("Now val = %d\n", val);
+	val = get_timer();
+	DPrintF("Now val = %d\n", val);
+	set_timer(40000);
+	val = get_timer();
+	DPrintF("Now val = %d\n", val);
+	val = get_timer();
+	DPrintF("Now val = %d\n", val);
 	//EClock Timer
 	//TimerBase->TimerECLOCKIntServer = CreateIntServer(DevName, TIMER_INT_PRI, TimerRTCIRQServer, TimerBase);
 	//AddIntServer(IRQ_RTC, TimerBase->TimerECLOCKIntServer);

@@ -33,6 +33,7 @@ static UINT32 clkcnt;
 
 #define PIT_MASK 0xFF
 #define PIT_SET 0x36
+#define PIT_MODE4 0x38
 
 /*
 static __inline__ void
@@ -90,12 +91,34 @@ void rtc_ack(SysBase *SysBase)
 	//DPrintF("in rtc_ack\n");
 }
 
-void set_timer(UINT32 hz)
+/*void set_timer(UINT32 hz)*/
+void set_timer(UINT32 div)
 {
+	/*
 	UINT32 div = CLK_CONST / hz;
 	pio_write_8(CLK_PORT4, PIT_SET);
 	pio_write_8(CLK_PORT1, div & PIT_MASK);
 	pio_write_8(CLK_PORT1, (div >> 8) & PIT_MASK);
+	*/
+
+	//UINT32 div = 65535;
+	pio_write_8(CLK_PORT4, PIT_MODE4);
+	pio_write_8(CLK_PORT1, div & PIT_MASK);
+	pio_write_8(CLK_PORT1, (div >> 8) & PIT_MASK);
+}
+
+UINT16 get_timer()
+{
+	UINT16 val = 0;
+	UINT8 lb;
+	UINT8 hb;
+	pio_write_8(CLK_PORT4, 0x00);
+	lb = pio_read_8(CLK_PORT1);
+	hb = pio_read_8(CLK_PORT1);
+	val = hb;
+	val = val << 8;
+	val = val | lb;
+	return val;
 }
 
 static UINT32 clock_handler(unsigned int exc_no, APTR Data, SysBase *SysBase)

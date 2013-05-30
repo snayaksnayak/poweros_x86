@@ -404,12 +404,153 @@ static void test_Timer(SysBase *SysBase)
 
 end:
 
-	if (io == NULL)
+	if (io != NULL)
 	{
 		DeleteIORequest((struct IORequest *)io);
 	}
 
+	if (mp != NULL)
+	{
+		DeleteMsgPort(mp);
+	}
+}
+
+static void test_mhz_delay(SysBase *SysBase)
+{
+	struct MsgPort *mp=NULL;
+	struct TimeRequest *io=NULL;
+	//struct TimeVal systime;
+	//struct Library *TimerBase;
+
+	// We need a proper MsgPort to get Messages
+	mp = CreateMsgPort();
 	if (mp == NULL)
+	{
+		DPrintF("Couldnt create Message port (no Memory?)\n");
+		goto end;
+	}
+
+	// Now we need an TimeRequest Structure
+	io = CreateIORequest(mp, sizeof(struct TimeRequest));
+	if (io == NULL)
+	{
+		DPrintF("Couldnt create TimeRequest (no Memory?)\n");
+		goto end;
+	}
+
+	//UNIT_MICROHZ works used for msec delays
+	INT32 ret = OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)io, 0);
+	if (ret != 0)
+	{
+		DPrintF("OpenDevice Timer failed for UNIT_MICROHZ!\n");
+		goto end;
+	}
+/*
+	// set TimerBase
+	TimerBase = (struct Library *)io->tr_node.io_Device;
+
+	systime.tv_secs = 0;
+	systime.tv_micro = 0;
+
+	// Get current system time
+	GetSysTime(&systime);
+	DPrintF("now wall clock time is sec: %d\n", systime.tv_secs);
+	DPrintF("now wall clock time is micro: %d\n", systime.tv_micro);
+
+	// set wall clock time (seconds till today since 1 January 1970)
+	io->tr_node.io_Command = TR_SETSYSTIME;
+	io->tr_time.tv_secs = 5000;
+	io->tr_time.tv_micro = 123;
+
+	// call timer device to set wall clock time
+	DPrintF("Setting wall clock time: 5000 sec 123 micro\n");
+	DoIO((struct IORequest *) io );
+	DPrintF("Setting wall clock time: done!\n");
+
+	systime.tv_secs = 0;
+	systime.tv_micro = 0;
+
+	// Get current system time
+	GetSysTime(&systime);
+	DPrintF("now wall clock time is sec: %d\n", systime.tv_secs);
+	DPrintF("now wall clock time is micro: %d\n", systime.tv_micro);
+*/
+	// lets try a delay
+	io->tr_node.io_Command = TR_ADDREQUEST;
+	io->tr_time.tv_secs = 1;
+	io->tr_time.tv_micro = 0;
+
+	// post request to the timer device in sync way
+	DPrintF("We will go 1 Seconds to sleep\n");
+	DoIO((struct IORequest *) io );
+	DPrintF("Return after 1 Seconds\n");
+
+	// Close Timer device
+	DPrintF("Closing Timer Device UNIT_VBLANK\n");
+	CloseDevice((struct IORequest *)io);
+	DeleteIORequest((struct IORequest *)io);
+	DeleteMsgPort(mp);
+
+	mp = NULL;
+	io = NULL;
+/*
+	// We need a proper MsgPort to get Messages
+	mp = CreateMsgPort();
+	if (mp == NULL)
+	{
+		DPrintF("Couldnt create Message port 2nd time (no Memory?)\n");
+		goto end;
+	}
+
+	// Now we need an TimeRequest Structure
+	io = CreateIORequest(mp, sizeof(struct TimeRequest));
+	if (io == NULL)
+	{
+		DPrintF("Couldnt create TimeRequest 2nd time (no Memory?)\n");
+		goto end;
+	}
+
+	//UNIT_WAITUNTIL is used for alarm
+	ret = OpenDevice("timer.device", UNIT_WAITUNTIL, (struct IORequest *)io, 0);
+	if (ret != 0)
+	{
+		DPrintF("OpenDevice Timer failed for UNIT_WAITUNTIL!\n");
+		goto end;
+	}
+
+	// set TimerBase
+	TimerBase = (struct Library *)io->tr_node.io_Device;
+
+	// Get current system time
+	GetSysTime(&systime);
+	DPrintF("now wall clock time is sec: %d\n", systime.tv_secs);
+	DPrintF("now wall clock time is micro: %d\n", systime.tv_micro);
+
+	// lets set an alarm adding 2 minute to current wall clock time
+	io->tr_node.io_Command = TR_ADDREQUEST;
+	io->tr_time.tv_secs  = systime.tv_secs+120; // 2 minute = 120 sec
+	io->tr_time.tv_micro = systime.tv_micro;
+	DPrintF("We will go for a 2 minute alarm\n");
+	DoIO((struct IORequest *) io);
+	DPrintF("Return after 2 minute alarm\n");
+
+	// Get current system time
+	GetSysTime(&systime);
+	DPrintF("after alarm, now wall clock time is sec: %d\n", systime.tv_secs);
+	DPrintF("after alarm, now wall clock time is micro: %d\n", systime.tv_micro);
+
+	// Close Timer device
+	DPrintF("Closing Timer Device UNIT_WAITUNTIL\n");
+	CloseDevice((struct IORequest *)io);
+*/
+end:
+
+	if (io != NULL)
+	{
+		DeleteIORequest((struct IORequest *)io);
+	}
+
+	if (mp != NULL)
 	{
 		DeleteMsgPort(mp);
 	}
@@ -845,30 +986,24 @@ static void test_TestTask(APTR data, struct SysBase *SysBase)
 
 	DPrintF("SysBase %x\n", SysBase);
 	DPrintF("SysBase->IDNestcnt %x\n", SysBase->IDNestCnt);
-//for(;;);
 
-//	asm("cli");
-	test_Timer(SysBase);
+	test_mhz_delay(SysBase);
 	goto out;
 
+	test_Timer(SysBase);
 	test_library(SysBase);
-
 	test_MousePointer(SysBase);
-
-//	test_cgfx(SysBase);
-
+	//test_cgfx(SysBase);
 	test_mouse(SysBase);
 	test_keyboard(SysBase);
 	test_AlertTest(SysBase);
 	test_RawIO(SysBase);
-//	VmwSetVideoMode(800, 600, 32, SysBase);
-
-//d_showtask(SysBase);
-//	memset32((APTR)0x230000, 0x00, 0x200000);
-hexdump(SysBase, 0x0, 100);
-
+	//VmwSetVideoMode(800, 600, 32, SysBase);
+	//d_showtask(SysBase);
+	//memset32((APTR)0x230000, 0x00, 0x200000);
+	hexdump(SysBase, 0x0, 100);
 	test_InputDev(SysBase);
-//test_new_memory();
+	//test_new_memory();
 out:
 	DPrintF("[TESTTASK] Finished, we are leaving... bye bye... till next reboot\n");
 }

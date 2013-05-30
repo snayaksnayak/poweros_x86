@@ -58,10 +58,14 @@ typedef struct TimerBase
 	struct TimeVal		VBlankTime;
 	struct TimeVal		Elapsed;
 
+
 	UINT32				TimerIRQ;
 	struct Interrupt	*TimerVBLIntServer;
 	struct Interrupt	*TimerMICROHZIntServer;
-	struct TimeVal		TimerIntTime;
+
+	UINT16				TimerCounter; // used in AddMHZDelay to know how much time the timer has already spent when we see a "new request"
+	struct TimeVal		TimerIntTime; // used in TimerMICROHZIRQServer to subtract this time from all delay requests
+	struct TimeVal		RequestedMinDelay; // used in AddMHZDelay to compare "newly requested delay" with "minimum delay requested till now"
 
 	struct TimerUnit	TimerUnit[UNIT_MAX];
 
@@ -101,6 +105,12 @@ void TimerSetSysTime(TimerBase *TimerBase, struct IORequest *ioreq);
 
 void AddAlarm(TimerBase *TimerBase, struct IORequest *ioreq);
 void AddDelay(TimerBase *TimerBase, struct IORequest *ioreq);
+void AddMHZDelay(TimerBase *TimerBase, struct IORequest *ioreq);
+
+void update_counter_value(TimerBase *TimerBase, struct TimeVal delay);
+void update_interval_time(TimerBase *TimerBase, struct TimeVal delay);
+UINT16 convert_microsec_to_counterval(TimerBase *TimerBase, UINT32 micro_sec);
+void convert_counterval_to_microsec(TimerBase *TimerBase, UINT16 count, struct TimeVal *tval);
 
 #endif
 

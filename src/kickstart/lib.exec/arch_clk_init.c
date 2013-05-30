@@ -91,6 +91,11 @@ void rtc_ack(SysBase *SysBase)
 	//DPrintF("in rtc_ack\n");
 }
 
+void start_pit_mode_4()
+{
+	pio_write_8(CLK_PORT4, PIT_MODE4);
+}
+
 /*void set_timer(UINT32 hz)*/
 void set_timer(UINT32 div)
 {
@@ -102,7 +107,7 @@ void set_timer(UINT32 div)
 	*/
 
 	//UINT32 div = 65535;
-	pio_write_8(CLK_PORT4, PIT_MODE4);
+	//pio_write_8(CLK_PORT4, PIT_MODE4);
 	pio_write_8(CLK_PORT1, div & PIT_MASK);
 	pio_write_8(CLK_PORT1, (div >> 8) & PIT_MASK);
 }

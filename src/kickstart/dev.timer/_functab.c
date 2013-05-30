@@ -28,6 +28,7 @@ __attribute__((no_instrument_function)) BOOL TimerVBLIRQServer(UINT32 number, Ti
 __attribute__((no_instrument_function)) BOOL TimerMICROHZIRQServer(UINT32 number, TimerBase *TimerBase, APTR SysBase);
 void set_timer(UINT32 hz);
 UINT16 get_timer();
+void start_pit_mode_4();
 
 APTR timer_FuncTab[] =
 {
@@ -64,9 +65,11 @@ struct TimerBase *timer_InitDev(struct TimerBase *TimerBase, UINT32 *segList, st
 		switch(unit_num)
 		{
 		case UNIT_VBLANK:
-		case UNIT_MICROHZ:
 		case UNIT_ECLOCK:
 			TimerBase->TimerUnit[unit_num].AddRequest = AddDelay;
+			break;
+		case UNIT_MICROHZ:
+			TimerBase->TimerUnit[unit_num].AddRequest = AddMHZDelay;
 			break;
 		case UNIT_WAITUNTIL:
 		case UNIT_WAITECLOCK:
@@ -82,7 +85,8 @@ struct TimerBase *timer_InitDev(struct TimerBase *TimerBase, UINT32 *segList, st
 	//MICROHZ Timer
 	TimerBase->TimerMICROHZIntServer = CreateIntServer(DevName, TIMER_INT_PRI, TimerMICROHZIRQServer, TimerBase);
 	AddIntServer(IRQ_CLK, TimerBase->TimerMICROHZIntServer);
-	set_timer(0);
+	start_pit_mode_4();
+	//set_timer(0);
 /*
 	set_timer(0);
 	UINT16 val = 0;

@@ -6,7 +6,7 @@ struct TimerBase *timer_OpenDev(struct TimerBase *TimerBase, struct IORequest *i
 	//DPrintF("[TimerDev] Open Unit: %d\n", unitNum);
     TimerBase->Device.dd_Library.lib_OpenCnt++;
     TimerBase->Device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
-    if (unitNum >= UNIT_VBLANK && unitNum <= UNIT_WAITECLOCK)
+    if (unitNum >= UNIT_MICROHZ && unitNum <= UNIT_WAITECLOCK)
     {
 		ioreq->io_Error = 0;
 	    ioreq->io_Unit = (struct  Unit *)&TimerBase->TimerUnit[unitNum];

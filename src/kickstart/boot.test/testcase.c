@@ -954,6 +954,7 @@ void d_showint(int addr, struct SysBase *SysBase)
 #endif
 void test_new_memory();
 void test_library();
+void DetectVirtio(APTR SysBase);
 
 static void test_TestTask(APTR data, struct SysBase *SysBase)
 {
@@ -987,9 +988,10 @@ static void test_TestTask(APTR data, struct SysBase *SysBase)
 	DPrintF("SysBase %x\n", SysBase);
 	DPrintF("SysBase->IDNestcnt %x\n", SysBase->IDNestCnt);
 
-	test_mhz_delay(SysBase);
+	DetectVirtio(SysBase);
 	goto out;
 
+	test_mhz_delay(SysBase);
 	test_Timer(SysBase);
 	test_library(SysBase);
 	test_MousePointer(SysBase);

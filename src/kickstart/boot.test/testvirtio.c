@@ -3,6 +3,7 @@
 #include "expansionbase.h"
 #include "expansion_funcs.h"
 #include "exec_funcs.h"
+#include "virtio_ring.h"
 
 static __inline__ void
 IO_Out8(UINT16 port, UINT8 value)
@@ -92,6 +93,18 @@ UINT32 virtio_read32(UINT16 base, UINT16 offset)
 #define VIRTIO_STATUS_DRV_OK		0x04
 #define VIRTIO_STATUS_FAIL			0x80
 
+
+/* This is the first element of the read scatter-gather list. */
+struct virtio_blk_outhdr {
+	/* VIRTIO_BLK_T* */
+	UINT32 type;
+	/* io priority. */
+	UINT32 ioprio;
+	/* Sector (ie. 512 byte offset) */
+	UINT64 sector;
+};
+
+
 // Feature description
 typedef struct virtio_feature
 {
@@ -100,6 +113,55 @@ typedef struct virtio_feature
 	UINT8 host_support;
 	UINT8 guest_support;
 } virtio_feature;
+
+
+struct virtio_queue
+{
+	void* unaligned_addr;
+	void* paddr;			/* physical addr of ring */
+	UINT32 page;				/* physical guest page  = paddr/4096*/
+
+	UINT16 num;				/* number of descriptors collected from device config offset*/
+	UINT32 ring_size;			/* size of ring in bytes */
+	struct vring vring;
+
+	UINT16 free_num;				/* free descriptors */
+	UINT16 free_head;			/* next free descriptor */
+	UINT16 free_tail;			/* last free descriptor */
+	UINT16 last_used;			/* we checked in used */
+
+	void **data;				/* pointer to array of pointers */
+};
+
+struct virtio_blk_config {
+	/* The capacity (in 512-byte sectors). */
+	UINT64 capacity;
+	/* The maximum segment size (if VIRTIO_BLK_F_SIZE_MAX) */
+	UINT32 size_max;
+	/* The maximum number of segments (if VIRTIO_BLK_F_SEG_MAX) */
+	UINT32 seg_max;
+	/* geometry the device (if VIRTIO_BLK_F_GEOMETRY) */
+	struct virtio_blk_geometry {
+		UINT16 cylinders;
+		UINT8 heads;
+		UINT8 sectors;
+	} geometry;
+
+	/* block size of device (if VIRTIO_BLK_F_BLK_SIZE) */
+	UINT32 blk_size;
+
+	/* the next 4 entries are guarded by VIRTIO_BLK_F_TOPOLOGY  */
+	/* exponent for physical block per logical block. */
+	UINT8 physical_block_exp;
+	/* alignment offset in logical blocks. */
+	UINT8 alignment_offset;
+	/* minimum I/O size without performance penalty in logical blocks. */
+	UINT16 min_io_size;
+	/* optimal sustained I/O size in logical blocks. */
+	UINT32 opt_io_size;
+
+} __attribute__((packed));
+
 
 typedef struct virtio_test {
 	SysBase			*SysBase;
@@ -111,10 +173,30 @@ typedef struct virtio_test {
 	int num_features;
 	virtio_feature*   features;
 
+	struct virtio_queue *queues;		/* our queues */
+	UINT16 num_queues;
+
 } virtio_test;
 
 virtio_test vt_str;
 virtio_test* vt = &vt_str;
+
+/* Headers for requests */
+static struct virtio_blk_outhdr *hdrs_vir;
+static void* hdrs_phys;
+
+/* Status bytes for requests.
+ *
+ * Usually a status is only one byte in length, but we need the lowest bit
+ * to propagate writable. For this reason we take u16_t and use a mask for
+ * the lower byte later.
+ */
+static UINT16 *status_vir;
+static void* status_phys;
+
+static struct virtio_blk_config blk_config;
+
+
 
 // Feature bits
 #define VIRTIO_BLK_F_BARRIER	0	// Does host support barriers?
@@ -168,6 +250,259 @@ void exchange_features(APTR SysBase, virtio_test *vt)
 	virtio_write32(vt->io_addr, VIRTIO_GUEST_F_OFFSET, guest_features);
 }
 
+
+void free_phys_queue(APTR SysBase, struct virtio_queue *q)
+{
+	FreeVec(q->unaligned_addr);
+	q->paddr = 0;
+	q->num = 0;
+	FreeVec(q->data);
+	q->data = NULL;
+}
+
+int alloc_phys_queue(APTR SysBase, struct virtio_queue *q)
+{
+	/* How much memory do we need? */
+	q->ring_size = vring_size(q->num, 4096);
+	DPrintF("q->ring_size (%d)\n", q->ring_size);
+
+	UINT32 addr;
+	q->unaligned_addr = AllocVec(q->ring_size, MEMF_FAST|MEMF_CLEAR);
+	DPrintF("q->unaligned_addr (%x)\n", q->unaligned_addr);
+
+	addr = (UINT32)q->unaligned_addr & 4095;
+	DPrintF("addr (%x)\n", addr);
+	addr = (UINT32)q->unaligned_addr - addr;
+	DPrintF("addr (%x)\n", addr);
+	addr = addr + 4096;
+	DPrintF("addr (%x)\n", addr);
+
+	q->paddr = (void*)addr;
+
+	if (q->unaligned_addr == NULL)
+		return 0;
+
+	q->data = AllocVec(sizeof(q->data[0]) * q->num, MEMF_FAST|MEMF_CLEAR);
+
+	if (q->data == NULL) {
+		FreeVec(q->unaligned_addr);
+		q->unaligned_addr = NULL;
+		q->paddr = 0;
+		return 0;
+	}
+
+	return 1;
+}
+
+void init_phys_queue(APTR SysBase, struct virtio_queue *q)
+{
+	//not needed
+	//memset(q->vaddr, 0, q->ring_size);
+	//memset(q->data, 0, sizeof(q->data[0]) * q->num);
+
+	/* physical page in guest */
+	q->page = (UINT32)q->paddr / 4096;
+
+	/* Set pointers in q->vring according to size */
+	vring_init(&q->vring, q->num, q->paddr, 4096);
+
+	/* Everything's free at this point */
+	for (int i = 0; i < q->num; i++) {
+		q->vring.desc[i].flags = VRING_DESC_F_NEXT;
+		q->vring.desc[i].next = (i + 1) & (q->num - 1);
+	}
+
+	q->free_num = q->num;
+	q->free_head = 0;
+	q->free_tail = q->num - 1;
+	q->last_used = 0;
+
+	return;
+}
+
+
+int init_phys_queues(APTR SysBase, virtio_test *vt)
+{
+	/* Initialize all queues */
+	int i, j, r;
+	struct virtio_queue *q;
+
+	for (i = 0; i < vt->num_queues; i++)
+	{
+		q = &vt->queues[i];
+
+		/* select the queue */
+		virtio_write16(vt->io_addr, VIRTIO_QSEL_OFFSET, i);
+		q->num = virtio_read16(vt->io_addr, VIRTIO_QSIZE_OFFSET);
+		DPrintF("q->num (%x)\n", q->num);
+		if (q->num & (q->num - 1)) {
+			DPrintF("Queue %d num=%d not ^2", i, q->num);
+			r = 0;
+			goto free_phys_queues;
+		}
+
+		r = alloc_phys_queue(SysBase,q);
+
+		if (r != 1)
+			goto free_phys_queues;
+
+		init_phys_queue(SysBase, q);
+
+		/* Let the host know about the guest physical page */
+		virtio_write32(vt->io_addr, VIRTIO_QADDR_OFFSET, q->page);
+	}
+
+	return 1;
+
+/* Error path */
+free_phys_queues:
+	for (j = 0; j < i; j++)
+	{
+		free_phys_queue(SysBase, &vt->queues[i]);
+	}
+
+	return r;
+}
+
+
+int virtio_alloc_queues(APTR SysBase, virtio_test *vt, int num_queues)
+{
+	int r = 1;
+
+	// Assume there's no device with more than 256 queues
+	if (num_queues < 0 || num_queues > 256)
+		return 0;
+
+	vt->num_queues = num_queues;
+
+	// allocate queue memory
+	vt->queues = AllocVec(num_queues * sizeof(vt->queues[0]), MEMF_FAST|MEMF_CLEAR);
+
+	if (vt->queues == NULL)
+		return 0;
+
+	//not needed in because of MEMF_CLEAR
+	//memset(dev->queues, 0, num_queues * sizeof(dev->queues[0]));
+
+	r = init_phys_queues(SysBase, vt);
+
+	if ((r != 1)) {
+		DPrintF("Could not initialize queues (%d)\n", r);
+		FreeVec(vt->queues);
+		vt->queues = NULL;
+	}
+
+	return r;
+}
+
+
+void virtio_free_queues(APTR SysBase, virtio_test *dev)
+{
+	int i;
+	for (i = 0; i < dev->num_queues; i++)
+	{
+		free_phys_queue(SysBase, &dev->queues[i]);
+	}
+
+	dev->num_queues = 0;
+	dev->queues = NULL;
+}
+
+#define VIRTIO_BLK_NUM_THREADS 1
+
+int virtio_blk_alloc_requests(APTR SysBase)
+{
+	/* Allocate memory for request headers and status field */
+
+	hdrs_vir = AllocVec(VIRTIO_BLK_NUM_THREADS * sizeof(hdrs_vir[0]),
+				MEMF_FAST|MEMF_CLEAR);
+
+	hdrs_phys = hdrs_vir;
+
+	if (!hdrs_vir)
+		return 0;
+
+	status_vir = AllocVec(VIRTIO_BLK_NUM_THREADS * sizeof(status_vir[0]),
+				  MEMF_FAST|MEMF_CLEAR);
+
+	status_phys = status_vir;
+
+	if (!status_vir) {
+		FreeVec(hdrs_vir);
+		return 0;
+	}
+
+	return 1;
+}
+
+int supports(APTR SysBase, virtio_test *dev, int bit, int host)
+{
+	for (int i = 0; i < dev->num_features; i++)
+	{
+		struct virtio_feature *f = &dev->features[i];
+
+		if (f->bit == bit)
+			return host ? f->host_support : f->guest_support;
+	}
+	DPrintF("ERROR: Bit not found!!\n");
+	return 0;
+}
+
+
+
+int virtio_host_supports(APTR SysBase, virtio_test *dev, int bit)
+{
+	return supports(SysBase, dev, bit, 1);
+}
+
+int virtio_guest_supports(APTR SysBase, virtio_test *dev, int bit)
+{
+	return supports(SysBase, dev, bit, 0);
+}
+
+
+int virtio_blk_config(APTR SysBase, virtio_test *vt)
+{
+	UINT32 sectors_low, sectors_high, size_mbs;
+
+	/* capacity is always there */
+	sectors_low = virtio_read32(vt->io_addr, VIRTIO_DEV_SPECIFIC_OFFSET+0);
+	sectors_high = virtio_read32(vt->io_addr, VIRTIO_DEV_SPECIFIC_OFFSET+4);
+	blk_config.capacity = ((UINT64)sectors_high << 32) | sectors_low;
+
+	/* If this gets truncated, you have a big disk... */
+	size_mbs = (UINT32)(blk_config.capacity * 512 / 1024 / 1024);
+	DPrintF("Capacity: %d MB\n", size_mbs);
+
+
+	if (virtio_host_supports(SysBase, vt, VIRTIO_BLK_F_SEG_MAX))
+	{
+		blk_config.seg_max = virtio_read32(vt->io_addr, VIRTIO_DEV_SPECIFIC_OFFSET+12);
+		DPrintF("Seg Max: %d\n", blk_config.seg_max);
+	}
+
+	if (virtio_host_supports(SysBase, vt, VIRTIO_BLK_F_GEOMETRY))
+	{
+		blk_config.geometry.cylinders = virtio_read16(vt->io_addr, VIRTIO_DEV_SPECIFIC_OFFSET+16);
+		blk_config.geometry.heads = virtio_read8(vt->io_addr, VIRTIO_DEV_SPECIFIC_OFFSET+18);
+		blk_config.geometry.sectors = virtio_read8(vt->io_addr, VIRTIO_DEV_SPECIFIC_OFFSET+19);
+
+		DPrintF("Geometry: cyl=%d heads=%d sectors=%d\n",
+					blk_config.geometry.cylinders,
+					blk_config.geometry.heads,
+					blk_config.geometry.sectors);
+	}
+
+	if (virtio_host_supports(SysBase, vt, VIRTIO_BLK_F_BLK_SIZE))
+	{
+		blk_config.blk_size = virtio_read32(vt->io_addr, VIRTIO_DEV_SPECIFIC_OFFSET+20);
+		DPrintF("Block Size: %d\n", blk_config.blk_size);
+	}
+
+	return 0;
+}
+
+
 void DetectVirtio(APTR SysBase)
 {
 	DPrintF("DetectVirtio\n");
@@ -209,11 +544,27 @@ void DetectVirtio(APTR SysBase)
 	//exchange features
 	exchange_features(SysBase, vt);
 
-	//initialize desc tables
+	//initialize indirect desc tables
 	//init_indirect_desc_tables();
 
 	// We know how to drive the device...
 	virtio_write8(vt->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_DRV);
+
+	// virtio blk has only 1 queue
+	virtio_alloc_queues(SysBase, vt, 1);
+
+	/* Allocate memory for headers and status */
+	if (virtio_blk_alloc_requests(SysBase) != 1)
+	{
+		virtio_free_queues(SysBase, vt);
+		return;
+	}
+
+	virtio_blk_config(SysBase, vt);
+
+	/* Let the host now that we are ready */
+	/* Driver is ready to go! */
+	virtio_write8(vt->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_DRV_OK);
 }
 
 

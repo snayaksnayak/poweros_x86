@@ -30,6 +30,8 @@ BOOL PCI_FindDevice(ExpansionBase *ExpBase, UINT16 vendorId, UINT16 deviceId, PC
 void PCI_SetBAR(ExpansionBase *ExpBase, const PCIAddress *addr, INT32 index, UINT32 value);
 UINT32 PCI_GetBARAddr(ExpansionBase *ExpBase, const PCIAddress *addr, INT32 index);
 void PCI_SetMemEnable(ExpansionBase *ExpBase, const PCIAddress *addr, BOOL enable);
+UINT8 PCI_GetIntrLine(ExpansionBase *ExpBase, const PCIAddress *addr);
+UINT8 PCI_GetIntrPin(ExpansionBase *ExpBase, const PCIAddress *addr);
 
 static volatile APTR FuncTab[] =
 {
@@ -51,6 +53,8 @@ static volatile APTR FuncTab[] =
 	(void(*)) PCI_SetBAR,
 	(void(*)) PCI_GetBARAddr,
 	(void(*)) PCI_SetMemEnable,
+	(void(*)) PCI_GetIntrLine,
+	(void(*)) PCI_GetIntrPin,
 	(APTR) ((UINT32)-1)
 };
 

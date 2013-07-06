@@ -191,7 +191,7 @@ void PCI_SetBAR(ExpansionBase *ExpBase, const PCIAddress *addr, INT32 index, UIN
 #define SysBase ExpBase->SysBase
 
 UINT32 PCI_GetBARAddr(ExpansionBase *ExpBase, const PCIAddress *addr, INT32 index)
-{	
+{
 	UINT32 bar = PCI_ConfigRead32(ExpBase, addr, offsetof(PCIConfigSpace, BAR[index]));
 	UINT32 mask = (bar & PCI_CONF_BAR_IO) ? 0x3 : 0xf;
 	return bar & ~mask;
@@ -221,3 +221,17 @@ void PCI_SetMemEnable(ExpansionBase *ExpBase, const PCIAddress *addr, BOOL enabl
 
    PCI_ConfigWrite16(ExpBase, addr, offsetof(PCIConfigSpace, command), command);
 }
+
+UINT8 PCI_GetIntrLine(ExpansionBase *ExpBase, const PCIAddress *addr)
+{
+	UINT8 line = PCI_ConfigRead8(ExpBase, addr, offsetof(PCIConfigSpace, intrLine));
+	return line;
+}
+
+UINT8 PCI_GetIntrPin(ExpansionBase *ExpBase, const PCIAddress *addr)
+{
+	UINT8 pin = PCI_ConfigRead8(ExpBase, addr, offsetof(PCIConfigSpace, intrPin));
+	return pin;
+}
+
+

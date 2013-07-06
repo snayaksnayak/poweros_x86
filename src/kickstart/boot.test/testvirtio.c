@@ -461,7 +461,7 @@ int virtio_guest_supports(APTR SysBase, virtio_test *dev, int bit)
 }
 
 
-int virtio_blk_config(APTR SysBase, virtio_test *vt)
+int virtio_blk_configuration(APTR SysBase, virtio_test *vt)
 {
 	UINT32 sectors_low, sectors_high, size_mbs;
 
@@ -531,6 +531,14 @@ void DetectVirtio(APTR SysBase)
 	vt->io_addr = PCIGetBARAddr(&vt->pciAddr, 0);
 	DPrintF("DetectVirtio: ioAddress %x\n", vt->io_addr);
 
+	UINT8 intLine;
+	intLine = PCIGetIntrLine(&vt->pciAddr);
+	DPrintF("DetectVirtio: intLine %x\n", intLine);
+
+	UINT8 intPin;
+	intPin = PCIGetIntrPin(&vt->pciAddr);
+	DPrintF("DetectVirtio: intPin %x\n", intPin);
+
 	// Reset the device
 	virtio_write8(vt->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_RESET);
 
@@ -560,7 +568,12 @@ void DetectVirtio(APTR SysBase)
 		return;
 	}
 
-	virtio_blk_config(SysBase, vt);
+	virtio_blk_configuration(SysBase, vt);
+
+	//This code is used to see if a virtio device generated an interrupt or not
+	//UINT8 isr;
+	//isr=virtio_read8(vt->io_addr, VIRTIO_ISR_STATUS_OFFSET);
+	//DPrintF("DetectVirtio: isr= %d\n", isr);
 
 	/* Let the host now that we are ready */
 	/* Driver is ready to go! */

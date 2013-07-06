@@ -17,6 +17,8 @@ BOOL PCIFindDevice(UINT16 vendorId, UINT16 deviceId, PCIAddress *addrOut);
 void PCISetBAR(const PCIAddress *addr, INT32 index, UINT32 value);
 UINT32 PCIGetBARAddr(const PCIAddress *addr, INT32 index);
 void PCISetMemEnable(const PCIAddress *addr, BOOL enable);
+UINT8 PCIGetIntrLine(const PCIAddress *addr);
+UINT8 PCIGetIntrPin(const PCIAddress *addr);
 
 #define AddDosNode(a,b,c)	(((BOOL(*)(APTR, INT32, UINT32, struct DeviceNode *)) 	_GETVECADDR(ExpansionBase,5)) (ExpansionBase, a,b,c))
 #define MakeDosNode(a)		(((struct DeviceNode *(*)(APTR, struct ExpDosNode *))	_GETVECADDR(ExpansionBase,6)) (ExpansionBase, a))
@@ -33,5 +35,6 @@ void PCISetMemEnable(const PCIAddress *addr, BOOL enable);
 #define PCISetBAR(a,b,c)		(((void(*)(APTR, const PCIAddress *addr, INT32 index, UINT32 value))		_GETVECADDR(ExpansionBase,15))(ExpansionBase,a,b,c))
 #define PCIGetBARAddr(a,b)		(((UINT32(*)(APTR, const PCIAddress *addr, INT32 index))					_GETVECADDR(ExpansionBase,16))(ExpansionBase,a,b))
 #define PCISetMemEnable(a,b)	(((void(*)(APTR, const PCIAddress *addr, BOOL enable))						_GETVECADDR(ExpansionBase,17))(ExpansionBase,a,b))
-
+#define PCIGetIntrLine(a)	(((UINT8(*)(APTR, const PCIAddress *addr))						_GETVECADDR(ExpansionBase,18))(ExpansionBase,a))
+#define PCIGetIntrPin(a)	(((UINT8(*)(APTR, const PCIAddress *addr))						_GETVECADDR(ExpansionBase,19))(ExpansionBase,a))
 #endif

@@ -111,7 +111,6 @@ struct vring {
  *	UINT16 avail_flags;
  *	UINT16 avail_idx;
  *	UINT16 available[num];
- *	UINT16 used_event_idx;
  *
  *	// Padding to the next align boundary.
  *	char pad[];
@@ -120,7 +119,6 @@ struct vring {
  *	UINT16 used_flags;
  *	UINT16 used_idx;
  *	struct vring_used_elem used[num];
- *	UINT16 avail_event_idx;
  * };
  */
 /* We publish the used event index at the end of the available ring, and vice
@@ -145,7 +143,8 @@ static inline unsigned vring_size(unsigned int num, unsigned long align)
 	return ((sizeof(struct vring_desc) * num + sizeof(UINT16) * (3 + num)
 		 + align - 1) & ~(align - 1))
 		 + ((sizeof(UINT16) * 3 + sizeof(struct vring_used_elem) * num
-		 + align - 1) & ~(align - 1));
+		 + align - 1) & ~(align - 1))
+		 + align; //for safty, this makes the size to minimum 3 pages
 }
 
 #endif /* _VIRTIO_RING_H */

@@ -93,6 +93,16 @@ UINT32 virtio_read32(UINT16 base, UINT16 offset)
 #define VIRTIO_STATUS_DRV_OK		0x04
 #define VIRTIO_STATUS_FAIL			0x80
 
+/* These two define direction. */
+#define VIRTIO_BLK_T_IN		0
+#define VIRTIO_BLK_T_OUT	1
+
+static inline void
+memset(void *dest, UINT8 value, UINT32 size)
+{
+   asm volatile ("cld; rep stosb" : "+c" (size), "+D" (dest) : "a" (value) : "memory");
+}
+
 
 /* This is the first element of the read scatter-gather list. */
 struct virtio_blk_outhdr {
@@ -182,8 +192,7 @@ virtio_test vt_str;
 virtio_test* vt = &vt_str;
 
 /* Headers for requests */
-static struct virtio_blk_outhdr *hdrs_vir;
-static void* hdrs_phys;
+static struct virtio_blk_outhdr *hdrs;
 
 /* Status bytes for requests.
  *
@@ -191,8 +200,7 @@ static void* hdrs_phys;
  * to propagate writable. For this reason we take u16_t and use a mask for
  * the lower byte later.
  */
-static UINT16 *status_vir;
-static void* status_phys;
+static UINT16 *status;
 
 static struct virtio_blk_config blk_config;
 
@@ -305,6 +313,9 @@ void init_phys_queue(APTR SysBase, struct virtio_queue *q)
 
 	/* Set pointers in q->vring according to size */
 	vring_init(&q->vring, q->num, q->paddr, 4096);
+	DPrintF("vring desc %x\n", q->vring.desc);
+	DPrintF("vring avail %x\n", q->vring.avail);
+	DPrintF("vring used %x\n", q->vring.used);
 
 	/* Everything's free at this point */
 	for (int i = 0; i < q->num; i++) {
@@ -334,7 +345,7 @@ int init_phys_queues(APTR SysBase, virtio_test *vt)
 		/* select the queue */
 		virtio_write16(vt->io_addr, VIRTIO_QSEL_OFFSET, i);
 		q->num = virtio_read16(vt->io_addr, VIRTIO_QSIZE_OFFSET);
-		DPrintF("q->num (%x)\n", q->num);
+		DPrintF("Queue %d, q->num (%d)\n", i, q->num);
 		if (q->num & (q->num - 1)) {
 			DPrintF("Queue %d num=%d not ^2", i, q->num);
 			r = 0;
@@ -414,21 +425,17 @@ int virtio_blk_alloc_requests(APTR SysBase)
 {
 	/* Allocate memory for request headers and status field */
 
-	hdrs_vir = AllocVec(VIRTIO_BLK_NUM_THREADS * sizeof(hdrs_vir[0]),
+	hdrs = AllocVec(VIRTIO_BLK_NUM_THREADS * sizeof(hdrs[0]),
 				MEMF_FAST|MEMF_CLEAR);
 
-	hdrs_phys = hdrs_vir;
-
-	if (!hdrs_vir)
+	if (!hdrs)
 		return 0;
 
-	status_vir = AllocVec(VIRTIO_BLK_NUM_THREADS * sizeof(status_vir[0]),
+	status = AllocVec(VIRTIO_BLK_NUM_THREADS * sizeof(status[0]),
 				  MEMF_FAST|MEMF_CLEAR);
 
-	status_phys = status_vir;
-
-	if (!status_vir) {
-		FreeVec(hdrs_vir);
+	if (!status) {
+		FreeVec(hdrs);
 		return 0;
 	}
 
@@ -501,8 +508,75 @@ int virtio_blk_configuration(APTR SysBase, virtio_test *vt)
 
 	return 0;
 }
+void test_mhz_delay(SysBase *SysBase);
+void virtio_blk_transfer(APTR SysBase, virtio_test* vt, UINT32 sector_num, UINT8 write, UINT8* buf)
+{
+	//prepare first out_hdr, since we have only one, replace 0 by a variable
+	//memset(&hdrs[0], 0, sizeof(hdrs[0]));
 
+	if(write == 1)
+	{
+		//for writing to disk
+		hdrs[0].type = VIRTIO_BLK_T_OUT;
+	}
+	else
+	{
+		//for reading from disk
+		hdrs[0].type = VIRTIO_BLK_T_IN;
+	}
 
+	//fill up sector
+	hdrs[0].ioprio = 0;
+	hdrs[0].sector = sector_num;
+
+	//clear status
+	status[0] = 1; //0 means success, 1 means error, 2 means unsupported
+
+	//fill into descriptor table
+	(vt->queues[0]).vring.desc[0].addr = (UINT32)&hdrs[0];
+	(vt->queues[0]).vring.desc[0].len = sizeof(hdrs[0]);
+	(vt->queues[0]).vring.desc[0].flags = VRING_DESC_F_NEXT;
+	(vt->queues[0]).vring.desc[0].next = 1;
+
+	(vt->queues[0]).vring.desc[1].addr = (UINT32)buf;
+	(vt->queues[0]).vring.desc[1].len = 512;
+	(vt->queues[0]).vring.desc[1].flags = VRING_DESC_F_NEXT | VRING_DESC_F_WRITE;
+	(vt->queues[0]).vring.desc[1].next = 2;
+
+	(vt->queues[0]).vring.desc[2].addr = (UINT32)&status[0];
+	(vt->queues[0]).vring.desc[2].len = sizeof(status[0]);
+	(vt->queues[0]).vring.desc[2].flags = VRING_DESC_F_WRITE;
+	(vt->queues[0]).vring.desc[2].next = 0;
+
+	//fill in available ring
+	(vt->queues[0]).vring.avail[0].flags = 0; //1 mean no interrupt needed, 0 means interrupt needed
+	(vt->queues[0]).vring.avail[0].idx = 3; //next available descriptor
+	(vt->queues[0]).vring.avail[0].ring[0] = 0; // 0 is the head of above request descriptor chain
+
+	//notify
+	virtio_write16(vt->io_addr, VIRTIO_QNOTFIY_OFFSET, 0); //notify that 1st queue (0) of this device has been updated
+
+	//give 15 sec delay
+	test_mhz_delay(SysBase);
+
+	DPrintF("status[0] %d\n", status[0]);
+
+	DPrintF("(vt->queues[0]).vring.used[0].flags %d\n", (vt->queues[0]).vring.used[0].flags);
+	DPrintF("(vt->queues[0]).vring.used[0].idx %d\n", (vt->queues[0]).vring.used[0].idx);
+	DPrintF("(vt->queues[0]).vring.used[0].ring[0].id %d\n", (vt->queues[0]).vring.used[0].ring[0].id);
+	DPrintF("(vt->queues[0]).vring.used[0].ring[0].len %d\n", (vt->queues[0]).vring.used[0].ring[0].len);
+
+	//This code is used to see if a virtio device generated an interrupt or not
+	UINT8 isr;
+	isr=virtio_read8(vt->io_addr, VIRTIO_ISR_STATUS_OFFSET);
+	DPrintF("virtio_blk_transfer: isr= %d\n", isr);
+
+	DPrintF("virtio_blk_transfer: buf[0]= %x\n", buf[0]);
+	DPrintF("virtio_blk_transfer: buf[1]= %x\n", buf[1]);
+	DPrintF("virtio_blk_transfer: buf[2]= %x\n", buf[2]);
+	DPrintF("virtio_blk_transfer: buf[3]= %x\n", buf[3]);
+
+}
 void DetectVirtio(APTR SysBase)
 {
 	DPrintF("DetectVirtio\n");
@@ -570,14 +644,21 @@ void DetectVirtio(APTR SysBase)
 
 	virtio_blk_configuration(SysBase, vt);
 
-	//This code is used to see if a virtio device generated an interrupt or not
-	//UINT8 isr;
-	//isr=virtio_read8(vt->io_addr, VIRTIO_ISR_STATUS_OFFSET);
-	//DPrintF("DetectVirtio: isr= %d\n", isr);
-
 	/* Let the host now that we are ready */
 	/* Driver is ready to go! */
 	virtio_write8(vt->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_DRV_OK);
+
+	//lets try to read the first sector
+	UINT32 sector_num = 0;
+	UINT8 write = 0; //0 means "READ" a sector, 1 means "WRITE"
+	UINT8 buf[512]; //buffer to which data is read/write, fill this buffer to write into device
+	memset(buf, 0, 512);
+	virtio_blk_transfer(SysBase, vt, sector_num, write, buf);
+
+	//lets try to read the second sector
+	//sector_num = 1;
+	//memset(buf, 0, 512);
+	//virtio_blk_transfer(SysBase, vt, sector_num, write, buf);
 }
 
 

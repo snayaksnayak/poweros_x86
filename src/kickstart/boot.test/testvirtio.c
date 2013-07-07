@@ -508,8 +508,9 @@ int virtio_blk_configuration(APTR SysBase, virtio_test *vt)
 
 	return 0;
 }
+
 void test_mhz_delay(SysBase *SysBase);
-void virtio_blk_transfer(APTR SysBase, virtio_test* vt, UINT32 sector_num, UINT8 write, UINT8* buf)
+void virtio_blk_transfer0(APTR SysBase, virtio_test* vt, UINT32 sector_num, UINT8 write, UINT8* buf)
 {
 	//prepare first out_hdr, since we have only one, replace 0 by a variable
 	//memset(&hdrs[0], 0, sizeof(hdrs[0]));
@@ -561,10 +562,19 @@ void virtio_blk_transfer(APTR SysBase, virtio_test* vt, UINT32 sector_num, UINT8
 
 	DPrintF("status[0] %d\n", status[0]);
 
-	DPrintF("(vt->queues[0]).vring.used[0].flags %d\n", (vt->queues[0]).vring.used[0].flags);
-	DPrintF("(vt->queues[0]).vring.used[0].idx %d\n", (vt->queues[0]).vring.used[0].idx);
-	DPrintF("(vt->queues[0]).vring.used[0].ring[0].id %d\n", (vt->queues[0]).vring.used[0].ring[0].id);
-	DPrintF("(vt->queues[0]).vring.used[0].ring[0].len %d\n", (vt->queues[0]).vring.used[0].ring[0].len);
+	int i=0;
+	for(i=0; i<(vt->queues[0]).num;i++)
+	{
+		DPrintF("(vt->queues[0]).vring.used[%d].flags %d\n", i, (vt->queues[0]).vring.used[i].flags);
+		DPrintF("(vt->queues[0]).vring.used[%d].idx %d\n", i, (vt->queues[0]).vring.used[i].idx);
+		int j=0;
+		for(j=0; j<(vt->queues[0]).num;j++)
+		{
+			DPrintF("(vt->queues[0]).vring.used[%d].ring[%d].id %d\n", i, j, (vt->queues[0]).vring.used[i].ring[j].id);
+			DPrintF("(vt->queues[0]).vring.used[%d].ring[%d].len %d\n", i, j, (vt->queues[0]).vring.used[i].ring[j].len);
+		}
+	}
+
 
 	//This code is used to see if a virtio device generated an interrupt or not
 	UINT8 isr;
@@ -577,6 +587,84 @@ void virtio_blk_transfer(APTR SysBase, virtio_test* vt, UINT32 sector_num, UINT8
 	DPrintF("virtio_blk_transfer: buf[3]= %x\n", buf[3]);
 
 }
+
+void virtio_blk_transfer1(APTR SysBase, virtio_test* vt, UINT32 sector_num, UINT8 write, UINT8* buf)
+{
+	//prepare first out_hdr, since we have only one, replace 0 by a variable
+	//memset(&hdrs[0], 0, sizeof(hdrs[0]));
+
+	if(write == 1)
+	{
+		//for writing to disk
+		hdrs[0].type = VIRTIO_BLK_T_OUT;
+	}
+	else
+	{
+		//for reading from disk
+		hdrs[0].type = VIRTIO_BLK_T_IN;
+	}
+
+	//fill up sector
+	hdrs[0].ioprio = 0;
+	hdrs[0].sector = sector_num;
+
+	//clear status
+	status[0] = 1; //0 means success, 1 means error, 2 means unsupported
+
+	//fill into descriptor table
+	(vt->queues[0]).vring.desc[3].addr = (UINT32)&hdrs[0];
+	(vt->queues[0]).vring.desc[3].len = sizeof(hdrs[0]);
+	(vt->queues[0]).vring.desc[3].flags = VRING_DESC_F_NEXT;
+	(vt->queues[0]).vring.desc[3].next = 1;
+
+	(vt->queues[0]).vring.desc[4].addr = (UINT32)buf;
+	(vt->queues[0]).vring.desc[4].len = 512;
+	(vt->queues[0]).vring.desc[4].flags = VRING_DESC_F_NEXT | VRING_DESC_F_WRITE;
+	(vt->queues[0]).vring.desc[4].next = 2;
+
+	(vt->queues[0]).vring.desc[5].addr = (UINT32)&status[0];
+	(vt->queues[0]).vring.desc[5].len = sizeof(status[0]);
+	(vt->queues[0]).vring.desc[5].flags = VRING_DESC_F_WRITE;
+	(vt->queues[0]).vring.desc[5].next = 0;
+
+	//fill in available ring
+	(vt->queues[0]).vring.avail[0].flags = 0; //1 mean no interrupt needed, 0 means interrupt needed
+	(vt->queues[0]).vring.avail[0].idx = 6; //next available descriptor
+	(vt->queues[0]).vring.avail[0].ring[0] = 3; // 0 is the head of above request descriptor chain
+
+	//notify
+	virtio_write16(vt->io_addr, VIRTIO_QNOTFIY_OFFSET, 0); //notify that 1st queue (0) of this device has been updated
+
+	//give 15 sec delay
+	test_mhz_delay(SysBase);
+
+	DPrintF("status[0] %d\n", status[0]);
+
+	int i=0;
+	for(i=0; i<(vt->queues[0]).num;i++)
+	{
+		DPrintF("(vt->queues[0]).vring.used[%d].flags %d\n", i, (vt->queues[0]).vring.used[i].flags);
+		DPrintF("(vt->queues[0]).vring.used[%d].idx %d\n", i, (vt->queues[0]).vring.used[i].idx);
+		int j=0;
+		for(j=0; j<(vt->queues[0]).num;j++)
+		{
+			DPrintF("(vt->queues[0]).vring.used[%d].ring[%d].id %d\n", i, j, (vt->queues[0]).vring.used[i].ring[j].id);
+			DPrintF("(vt->queues[0]).vring.used[%d].ring[%d].len %d\n", i, j, (vt->queues[0]).vring.used[i].ring[j].len);
+		}
+	}
+
+	//This code is used to see if a virtio device generated an interrupt or not
+	UINT8 isr;
+	isr=virtio_read8(vt->io_addr, VIRTIO_ISR_STATUS_OFFSET);
+	DPrintF("virtio_blk_transfer: isr= %d\n", isr);
+
+	DPrintF("virtio_blk_transfer: buf[0]= %x\n", buf[0]);
+	DPrintF("virtio_blk_transfer: buf[1]= %x\n", buf[1]);
+	DPrintF("virtio_blk_transfer: buf[2]= %x\n", buf[2]);
+	DPrintF("virtio_blk_transfer: buf[3]= %x\n", buf[3]);
+
+}
+
 void DetectVirtio(APTR SysBase)
 {
 	DPrintF("DetectVirtio\n");
@@ -653,12 +741,12 @@ void DetectVirtio(APTR SysBase)
 	UINT8 write = 0; //0 means "READ" a sector, 1 means "WRITE"
 	UINT8 buf[512]; //buffer to which data is read/write, fill this buffer to write into device
 	memset(buf, 0, 512);
-	virtio_blk_transfer(SysBase, vt, sector_num, write, buf);
+	virtio_blk_transfer0(SysBase, vt, sector_num, write, buf);
 
 	//lets try to read the second sector
-	//sector_num = 1;
-	//memset(buf, 0, 512);
-	//virtio_blk_transfer(SysBase, vt, sector_num, write, buf);
+	sector_num = 1;
+	memset(buf, 0, 512);
+	virtio_blk_transfer1(SysBase, vt, sector_num, write, buf);
 }
 
 

@@ -79,7 +79,7 @@ __attribute__((no_instrument_function)) BOOL TimerVBLIRQServer(UINT32 number, Ti
 
 __attribute__((no_instrument_function)) BOOL TimerMICROHZIRQServer(UINT32 number, TimerBase *TimerBase, APTR SysBase)
 {
-	DPrintF("TimerMICROHZIRQServer\n");
+	//DPrintF("TimerMICROHZIRQServer\n");
 
 	//DPrintF("TimerBase->CurrentTime->tv_secs = %d\n", TimerBase->CurrentTime.tv_secs);
 	//DPrintF("TimerBase->CurrentTime->tv_micro = %d\n", TimerBase->CurrentTime.tv_micro);

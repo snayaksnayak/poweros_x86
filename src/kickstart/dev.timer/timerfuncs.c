@@ -24,7 +24,7 @@ void timer_AbortIO(TimerBase *TimerBase, struct IORequest *ioreq)
 
 INT32 timer_CmpTime(struct TimerBase *TimerBase, struct TimeVal *src, struct TimeVal *dest)
 {
-	DPrintF("Inside timer_CmpTime!\n");
+	//DPrintF("Inside timer_CmpTime!\n");
     INT32 diff;
 
     if (dest->tv_secs == src->tv_secs) diff = src->tv_micro - dest->tv_micro;

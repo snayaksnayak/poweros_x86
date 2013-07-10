@@ -477,13 +477,13 @@ void test_mhz_delay(SysBase *SysBase)
 */
 	// lets try a delay
 	io->tr_node.io_Command = TR_ADDREQUEST;
-	io->tr_time.tv_secs = 15;
+	io->tr_time.tv_secs = 2;
 	io->tr_time.tv_micro = 0;
 
 	// post request to the timer device in sync way
-	DPrintF("We will go 15 Seconds to sleep\n");
+	DPrintF("We will go 2 Seconds to sleep\n");
 	DoIO((struct IORequest *) io );
-	DPrintF("Return after 15 Seconds\n");
+	DPrintF("Return after 2 Seconds\n");
 
 	// Close Timer device
 	DPrintF("Closing Timer Device UNIT_VBLANK\n");

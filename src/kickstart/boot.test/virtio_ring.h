@@ -104,6 +104,7 @@ struct vring {
  *
  * struct vring
  * {
+ *
  *	// The actual descriptors (16 bytes each)
  *	struct vring_desc desc[num];
  *
@@ -132,19 +133,16 @@ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
 			      unsigned long align)
 {
 	vr->num = num;
-	vr->desc = p;
+	vr->desc = p; // at page boundary, p is assumed to align to page boundary
 	vr->avail = p + num*sizeof(struct vring_desc);
-	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + sizeof(UINT16)
-		+ align-1) & ~(align - 1));
+	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + (align-1)) & ~(align - 1)); // at page boundary
 }
 
 static inline unsigned vring_size(unsigned int num, unsigned long align)
 {
-	return ((sizeof(struct vring_desc) * num + sizeof(UINT16) * (3 + num)
-		 + align - 1) & ~(align - 1))
-		 + ((sizeof(UINT16) * 3 + sizeof(struct vring_used_elem) * num
-		 + align - 1) & ~(align - 1))
-		 + align; //for safty, this makes the size to minimum 3 pages
+	return ((sizeof(struct vring_desc) * num + sizeof(UINT16) * 2 + sizeof(UINT16) * num + (align - 1)) & ~(align - 1)) //now, minimum 1 page
+		+ ((sizeof(UINT16) * 2 + sizeof(struct vring_used_elem) * num + (align - 1)) & ~(align - 1)) //now, minimum 2 pages
+		+ (align); //for safty, now this makes the size to minimum 3 pages
 }
 
 #endif /* _VIRTIO_RING_H */

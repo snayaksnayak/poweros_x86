@@ -415,7 +415,7 @@ end:
 	}
 }
 
-void test_mhz_delay(SysBase *SysBase)
+void test_mhz_delay(SysBase *SysBase, int sec)
 {
 	struct MsgPort *mp=NULL;
 	struct TimeRequest *io=NULL;
@@ -477,13 +477,13 @@ void test_mhz_delay(SysBase *SysBase)
 */
 	// lets try a delay
 	io->tr_node.io_Command = TR_ADDREQUEST;
-	io->tr_time.tv_secs = 2;
+	io->tr_time.tv_secs = sec;
 	io->tr_time.tv_micro = 0;
 
 	// post request to the timer device in sync way
-	DPrintF("We will go 2 Seconds to sleep\n");
+	DPrintF("We will go %d Seconds to sleep\n", sec);
 	DoIO((struct IORequest *) io );
-	DPrintF("Return after 2 Seconds\n");
+	DPrintF("Return after %d Seconds\n", sec);
 
 	// Close Timer device
 	DPrintF("Closing Timer Device UNIT_VBLANK\n");
@@ -991,7 +991,7 @@ static void test_TestTask(APTR data, struct SysBase *SysBase)
 	DetectVirtio(SysBase);
 	goto out;
 
-	test_mhz_delay(SysBase);
+	test_mhz_delay(SysBase, 5);
 	test_Timer(SysBase);
 	test_library(SysBase);
 	test_MousePointer(SysBase);

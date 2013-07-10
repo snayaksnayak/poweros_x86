@@ -513,7 +513,7 @@ int virtio_blk_configuration(APTR SysBase, virtio_test *vt)
 	return 0;
 }
 
-void test_mhz_delay(SysBase *SysBase);
+void test_mhz_delay(SysBase *SysBase, int sec);
 void virtio_blk_transfer(APTR SysBase, virtio_test* vt, UINT32 sector_num, UINT8 write, UINT8* buf)
 {
 	//int j=0;
@@ -540,6 +540,8 @@ void virtio_blk_transfer(APTR SysBase, virtio_test* vt, UINT32 sector_num, UINT8
 	status[0] = 1; //0 means success, 1 means error, 2 means unsupported
 
 	DPrintF("\n\n\n sector = %d\n", sector_num);
+	DPrintF("idx = %d\n", (vt->queues[0]).vring.avail->idx);
+
 
 	//fill into descriptor table
 	(vt->queues[0]).vring.desc[0].addr = (UINT32)&hdrs[0];
@@ -560,13 +562,13 @@ void virtio_blk_transfer(APTR SysBase, virtio_test* vt, UINT32 sector_num, UINT8
 	//fill in available ring
 	(vt->queues[0]).vring.avail->flags = 0; //1 mean no interrupt needed, 0 means interrupt needed
 	(vt->queues[0]).vring.avail->ring[0] = 0; // 0 is the head of above request descriptor chain
-	(vt->queues[0]).vring.avail->idx = (vt->queues[0]).vring.avail->idx + 3; //next available descriptor
+	(vt->queues[0]).vring.avail->idx = (vt->queues[0]).vring.avail->idx + 128; //next available descriptor
 
 	//notify
 	virtio_write16(vt->io_addr, VIRTIO_QNOTFIY_OFFSET, 0); //notify that 1st queue (0) of this device has been updated
 
-	//give 2 sec delay
-	test_mhz_delay(SysBase);
+	//give some delay
+	test_mhz_delay(SysBase, 1);
 
 	DPrintF("status[0] %d\n", status[0]);
 
@@ -678,7 +680,7 @@ void DetectVirtio(APTR SysBase)
 	UINT8 buf[512]; //buffer to which data is read/write, fill this buffer to write into device
 
 	int i;
-	for (i=0; i < 100; i++) //8192 max
+	for (i=0; i < 8192; i++) //8192 max
 	{
 		//lets try to read the sectors
 		sector_num = i;

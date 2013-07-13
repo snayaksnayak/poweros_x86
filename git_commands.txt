@@ -39,6 +39,9 @@ For getting new things from cycl0ne's repository:
     #git fetch upstream
     #git merge --no-ff upstream/master
     #git mergetool
+    (in meld tool, first press "merge all non conflicting",
+    then see what to be for conflicting things showing in red,
+    there must be at least one conflicting thing)
     #git status
     #git commit -m "comment"
     #git meld e91bdff ee6d110 (to see diff between two commits e91bdff and ee6d110)
@@ -52,11 +55,36 @@ delete a local branch
 undo stagging area changes and working area changes
 	#git reset --hard HEAD
 
+undo a commit permanently
+	#git reset --hard HEAD~1
+
 merge from a upstream branch to local branch
 	#git checkout -b gfxtest
 	#git fetch upstream
 	#git merge --no-ff upstream/development
 	#git mergetool
+	(in meld tool, first press "merge all non conflicting",
+	then see what to be for conflicting things showing in red,
+	there must be at least one conflicting thing)
 
+to see config items:
+	for all users (collected from /etc/gitconfig)
+	#git config --system --list
+	for current user (collected from ~/.gitconfig)
+	#git config --global --list
+	for current repository (collected from .git/config)
+	#git config --list
+
+for creating a new repository (go inside the working folder)
+	#git init
+
+for adding files for commit
+	#git add -A 	(stages "new untracked files" and "modified files" and "deleted files")
+    #git add .		(stages "new untracked files" and "modified files", but not "deleted files")
+    #git add -u		(stages "modified files" and "deleted files", but not "new untracked files")
+
+if you want to undo things (after you do a merge and before commiting it) do
+	#git reset --merge
+	#git clean -dxf
 
 

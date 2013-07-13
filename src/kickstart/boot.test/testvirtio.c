@@ -516,8 +516,6 @@ int virtio_blk_configuration(APTR SysBase, virtio_test *vt)
 void test_mhz_delay(SysBase *SysBase, int sec);
 void virtio_blk_transfer(APTR SysBase, virtio_test* vt, UINT32 sector_num, UINT8 write, UINT8* buf)
 {
-	//int j=0;
-
 	//prepare first out_hdr, since we have only one, replace 0 by a variable
 	//memset(&hdrs[0], 0, sizeof(hdrs[0]));
 
@@ -562,7 +560,7 @@ void virtio_blk_transfer(APTR SysBase, virtio_test* vt, UINT32 sector_num, UINT8
 	//fill in available ring
 	(vt->queues[0]).vring.avail->flags = 0; //1 mean no interrupt needed, 0 means interrupt needed
 	(vt->queues[0]).vring.avail->ring[0] = 0; // 0 is the head of above request descriptor chain
-	(vt->queues[0]).vring.avail->idx = (vt->queues[0]).vring.avail->idx + 128; //next available descriptor
+	(vt->queues[0]).vring.avail->idx = (vt->queues[0]).vring.avail->idx + 3; //next available descriptor
 
 	//notify
 	virtio_write16(vt->io_addr, VIRTIO_QNOTFIY_OFFSET, 0); //notify that 1st queue (0) of this device has been updated
@@ -573,6 +571,8 @@ void virtio_blk_transfer(APTR SysBase, virtio_test* vt, UINT32 sector_num, UINT8
 	DPrintF("status[0] %d\n", status[0]);
 
 /*
+	int j=0;
+
 	DPrintF("(vt->queues[0]).vring.used->flags %d\n", (vt->queues[0]).vring.used->flags);
 	DPrintF("(vt->queues[0]).vring.used->idx %d\n", (vt->queues[0]).vring.used->idx);
 	for(j=0; j<(vt->queues[0]).num;j++)
@@ -580,9 +580,7 @@ void virtio_blk_transfer(APTR SysBase, virtio_test* vt, UINT32 sector_num, UINT8
 		DPrintF("(vt->queues[0]).vring.used->ring[%d].id %d\n", j, (vt->queues[0]).vring.used->ring[j].id);
 		DPrintF("(vt->queues[0]).vring.used->ring[%d].len %d\n", j, (vt->queues[0]).vring.used->ring[j].len);
 	}
-*/
 
-/*
 	DPrintF("(vt->queues[0]).vring.avail->flags %d\n", (vt->queues[0]).vring.avail->flags);
 	DPrintF("(vt->queues[0]).vring.avail->idx %d\n", (vt->queues[0]).vring.avail->idx);
 	for(j=0; j<(vt->queues[0]).num;j++)
@@ -670,7 +668,7 @@ void DetectVirtio(APTR SysBase)
 
 	virtio_blk_configuration(SysBase, vt);
 
-	/* Let the host now that we are ready */
+	/* Let the host know that we are ready */
 	/* Driver is ready to go! */
 	virtio_write8(vt->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_DRV_OK);
 

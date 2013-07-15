@@ -39,8 +39,9 @@ For getting new things from cycl0ne's repository:
     #git fetch upstream
     #git merge --no-ff upstream/master
     #git mergetool
-    (in meld tool, first press "merge all non conflicting",
-    then see what to be for conflicting things showing in red,
+    (in meld tool, do modifications to file shown in middle tab and save;
+    first press "merge all non conflicting",
+    then see what to be done for conflicting things showing in red,
     there must be at least one conflicting thing)
     #git status
     #git commit -m "comment"
@@ -63,7 +64,8 @@ merge from a upstream branch to local branch
 	#git fetch upstream
 	#git merge --no-ff upstream/development
 	#git mergetool
-	(in meld tool, first press "merge all non conflicting",
+	(in meld tool, do modifications to file shown in middle tab and save;
+	first press "merge all non conflicting",
 	then see what to be for conflicting things showing in red,
 	there must be at least one conflicting thing)
 

@@ -27,6 +27,7 @@ void PCI_ConfigWrite16(ExpansionBase *ExpBase, const PCIAddress *addr, UINT16 of
 void PCI_ConfigWrite8(ExpansionBase *ExpBase, const PCIAddress *addr, UINT16 offset, UINT8 data);
 BOOL PCI_ScanBus(ExpansionBase *ExpBase, PCIScanState *state);
 BOOL PCI_FindDevice(ExpansionBase *ExpBase, UINT16 vendorId, UINT16 deviceId, PCIAddress *addrOut);
+BOOL PCI_FindDeviceByUnit(ExpansionBase *ExpBase, UINT16 vendorId, UINT16 deviceId, PCIAddress *addrOut, INT32 unit);
 void PCI_SetBAR(ExpansionBase *ExpBase, const PCIAddress *addr, INT32 index, UINT32 value);
 UINT32 PCI_GetBARAddr(ExpansionBase *ExpBase, const PCIAddress *addr, INT32 index);
 void PCI_SetMemEnable(ExpansionBase *ExpBase, const PCIAddress *addr, BOOL enable);
@@ -55,6 +56,7 @@ static volatile APTR FuncTab[] =
 	(void(*)) PCI_SetMemEnable,
 	(void(*)) PCI_GetIntrLine,
 	(void(*)) PCI_GetIntrPin,
+	(void(*)) PCI_FindDeviceByUnit,
 	(APTR) ((UINT32)-1)
 };
 

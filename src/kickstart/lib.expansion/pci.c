@@ -167,6 +167,36 @@ BOOL PCI_FindDevice(ExpansionBase *ExpBase, UINT16 vendorId, UINT16 deviceId, PC
    return FALSE;
 }
 
+/*
+ * PCI_FindDeviceByUnit --
+ *
+ *    Scan the PCI bus for a device with a specific vendor and device ID and unit.
+ *
+ *    On success, returns TRUE and puts the device address into 'addrOut'.
+ *    If the device was not found, returns FALSE.
+ */
+
+BOOL PCI_FindDeviceByUnit(ExpansionBase *ExpBase, UINT16 vendorId, UINT16 deviceId, PCIAddress *addrOut, INT32 unit)
+{
+	PCIScanState busScan = {};
+
+	while (PCI_ScanBus(ExpBase, &busScan))
+	{
+		if (busScan.vendorId == vendorId && busScan.deviceId == deviceId)
+		{
+			unit--;
+			if(unit != -1)
+			{
+				continue;
+			}
+			*addrOut = busScan.addr;
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
 
 /*
  * PCI_SetBAR --

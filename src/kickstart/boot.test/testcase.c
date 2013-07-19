@@ -988,9 +988,9 @@ static void test_TestTask(APTR data, struct SysBase *SysBase)
 	DPrintF("SysBase %x\n", SysBase);
 	DPrintF("SysBase->IDNestcnt %x\n", SysBase->IDNestCnt);
 
-	DetectVirtio(SysBase);
 	goto out;
 
+	DetectVirtio(SysBase);
 	test_mhz_delay(SysBase, 5);
 	test_Timer(SysBase);
 	test_library(SysBase);

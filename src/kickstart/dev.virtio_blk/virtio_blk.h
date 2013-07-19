@@ -38,10 +38,10 @@ struct VirtioBlkRequest
 };
 
 
-// Blk Device library style synchronous functions (non standard or device specific)
+// declaration of library style synchronous functions (non standard or device specific)
 // we have nothing now
 
-// library style vectors to synchronous functions (non standard or device specific)
+// vectors to library style synchronous functions (non standard or device specific)
 // we have nothing now
 
 #endif //virtio_blk_h

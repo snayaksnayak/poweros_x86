@@ -59,7 +59,7 @@ void virtio_blk_AbortIO(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 	if(ioreq->io_Message.mn_Node.ln_Type != NT_REPLYMSG)
     {
 		Remove((struct Node *)ioreq);
-		INTERN_VirtioBlkEndCommand(VirtioBlkBase, IOERR_ABORTED, ioreq);
+		VirtioBlk_end_command(VirtioBlkBase, IOERR_ABORTED, ioreq);
 	}
 }
 

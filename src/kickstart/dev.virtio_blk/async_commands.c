@@ -6,7 +6,7 @@
 void VirtioBlkInvalid(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 {
 	DPrintF("Inside VirtioBlkInvalid!\n");
-	INTERN_VirtioBlkEndCommand(VirtioBlkBase, IOERR_NOCMD, ioreq);
+	VirtioBlk_end_command(VirtioBlkBase, IOERR_NOCMD, ioreq);
 }
 void VirtioBlkStart(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 {
@@ -17,25 +17,25 @@ void VirtioBlkStart(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 	VirtioBlkBase->VirtioBlkIntServer = CreateIntServer(DevName, VIRTIO_BLK_INT_PRI, VirtioBlkIRQServer, VirtioBlkBase);
 	AddIntServer(irq, VirtioBlkBase->VirtioBlkIntServer);
 
-	INTERN_VirtioBlkEndCommand(VirtioBlkBase, IOERR_NOCMD, ioreq);
+	VirtioBlk_end_command(VirtioBlkBase, IOERR_NOCMD, ioreq);
 
 }
 void VirtioBlkStop(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 {
 DPrintF("Inside VirtioBlkStop!\n");
-	INTERN_VirtioBlkEndCommand(VirtioBlkBase, IOERR_NOCMD, ioreq);
+	VirtioBlk_end_command(VirtioBlkBase, IOERR_NOCMD, ioreq);
 
 }
 void VirtioBlkRead(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 {
 DPrintF("Inside VirtioBlkRead!\n");
-	INTERN_VirtioBlkEndCommand(VirtioBlkBase, IOERR_NOCMD, ioreq);
+	VirtioBlk_end_command(VirtioBlkBase, IOERR_NOCMD, ioreq);
 
 }
 void VirtioBlkWrite(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 {
 DPrintF("Inside VirtioBlkWrite!\n");
-	INTERN_VirtioBlkEndCommand(VirtioBlkBase, IOERR_NOCMD, ioreq);
+	VirtioBlk_end_command(VirtioBlkBase, IOERR_NOCMD, ioreq);
 
 }
 
@@ -46,7 +46,7 @@ void VirtioBlkGetDeviceInfo(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq
 	//do something critical here
 	Enable(ipl);
 
-	INTERN_VirtioBlkEndCommand(VirtioBlkBase, 0, (struct IOStdReq *)ioreq);
+	VirtioBlk_end_command(VirtioBlkBase, 0, (struct IOStdReq *)ioreq);
 }
 
 

@@ -3,72 +3,32 @@
 #include "expansionbase.h"
 #include "expansion_funcs.h"
 #include "exec_funcs.h"
+#include "arch_config.h"
+
 #include "virtio_ring.h"
 
-static __inline__ void
-IO_Out8(UINT16 port, UINT8 value)
-{
-   __asm__ __volatile__ ("outb %0, %1" : :"a" (value), "d" (port));
-}
-
-static __inline__ void
-IO_Out16(UINT16 port, UINT16 value)
-{
-   __asm__ __volatile__ ("outw %0, %1" : :"a" (value), "d" (port));
-}
-
-static __inline__ void
-IO_Out32(UINT16 port, UINT32 value)
-{
-   __asm__ __volatile__ ("outl %0, %1" : :"a" (value), "d" (port));
-}
-
-static __inline__ UINT8
-IO_In8(UINT16 port)
-{
-   UINT8 value;
-   __asm__ __volatile__ ("inb %1, %0" :"=a" (value) :"d" (port));
-   return value;
-}
-
-static __inline__ UINT16
-IO_In16(UINT16 port)
-{
-   UINT16 value;
-   __asm__ __volatile__ ("inw %1, %0" :"=a" (value) :"d" (port));
-   return value;
-}
-
-static __inline__ UINT32
-IO_In32(UINT16 port)
-{
-   UINT32 value;
-   __asm__ __volatile__ ("inl %1, %0" :"=a" (value) :"d" (port));
-   return value;
-}
-
-void virtio_write8(UINT16 base, UINT16 offset, UINT8 val)
+static void virtio_write8(UINT16 base, UINT16 offset, UINT8 val)
 {
 	IO_Out8(base+offset, val);
 }
-void virtio_write16(UINT16 base, UINT16 offset, UINT16 val)
+static void virtio_write16(UINT16 base, UINT16 offset, UINT16 val)
 {
 	IO_Out16(base+offset, val);
 }
-void virtio_write32(UINT16 base, UINT16 offset, UINT32 val)
+static void virtio_write32(UINT16 base, UINT16 offset, UINT32 val)
 {
 	IO_Out32(base+offset, val);
 }
 
-UINT8 virtio_read8(UINT16 base, UINT16 offset)
+static UINT8 virtio_read8(UINT16 base, UINT16 offset)
 {
 	return IO_In8(base+offset);
 }
-UINT16 virtio_read16(UINT16 base, UINT16 offset)
+static UINT16 virtio_read16(UINT16 base, UINT16 offset)
 {
 	return IO_In16(base+offset);
 }
-UINT32 virtio_read32(UINT16 base, UINT16 offset)
+static UINT32 virtio_read32(UINT16 base, UINT16 offset)
 {
 	return IO_In32(base+offset);
 }
@@ -96,12 +56,6 @@ UINT32 virtio_read32(UINT16 base, UINT16 offset)
 /* These two define direction. */
 #define VIRTIO_BLK_T_IN		0
 #define VIRTIO_BLK_T_OUT	1
-
-static inline void
-memset(void *dest, UINT8 value, UINT32 size)
-{
-   asm volatile ("cld; rep stosb" : "+c" (size), "+D" (dest) : "a" (value) : "memory");
-}
 
 
 /* This is the first element of the read scatter-gather list. */
@@ -188,8 +142,8 @@ typedef struct virtio_test {
 
 } virtio_test;
 
-virtio_test vt_str;
-virtio_test* vt = &vt_str;
+static virtio_test vt_str;
+static virtio_test* vt = &vt_str;
 
 /* Headers for requests */
 static struct virtio_blk_outhdr *hdrs;
@@ -218,7 +172,7 @@ static struct virtio_blk_config blk_config;
 #define VIRTIO_BLK_F_TOPOLOGY	10	// Topology information is available
 #define VIRTIO_BLK_ID_BYTES		20	// ID string length
 
-virtio_feature blkf[] = {
+static virtio_feature blkf[] = {
 	{ "barrier",	VIRTIO_BLK_F_BARRIER,	0,	0 	},
 	{ "sizemax",	VIRTIO_BLK_F_SIZE_MAX,	0,	0	},
 	{ "segmax",		VIRTIO_BLK_F_SEG_MAX,	0,	0	},

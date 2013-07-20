@@ -16,16 +16,6 @@ int LibVirtio_supports(LibVirtioBase *LibVirtioBase, VirtioDevice *vd, int bit, 
 	return 0;
 }
 
-int LibVirtio_host_supports(LibVirtioBase *LibVirtioBase, VirtioDevice *vd, int bit)
-{
-	return LibVirtio_supports(LibVirtioBase, vd, bit, 1);
-}
-
-int LibVirtio_guest_supports(LibVirtioBase *LibVirtioBase, VirtioDevice *vd, int bit)
-{
-	return LibVirtio_supports(LibVirtioBase, vd, bit, 0);
-}
-
 //*******************
 
 

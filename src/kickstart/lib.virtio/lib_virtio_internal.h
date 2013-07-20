@@ -120,6 +120,22 @@ void LibVirtio_init_phys_queue(LibVirtioBase *LibVirtioBase, struct virtio_queue
 void LibVirtio_free_phys_queue(LibVirtioBase *LibVirtioBase, struct virtio_queue *q);
 
 
+//outer name (vectors) of our own library functions,
+//we can use them inside our library too.
+#define VirtioWrite8(a,b,c) (((void(*)(APTR, UINT16, UINT16, UINT8)) 	_GETVECADDR(LibVirtioBase, 5))(LibVirtioBase, a, b, c))
+#define VirtioWrite16(a,b,c) (((void(*)(APTR, UINT16, UINT16, UINT16)) 	_GETVECADDR(LibVirtioBase, 6))(LibVirtioBase, a, b, c))
+#define VirtioWrite32(a,b,c) (((void(*)(APTR, UINT16, UINT16, UINT32)) 	_GETVECADDR(LibVirtioBase, 7))(LibVirtioBase, a, b, c))
+#define VirtioRead8(a,b) (((UINT8(*)(APTR, UINT16, UINT16)) 	_GETVECADDR(LibVirtioBase, 8))(LibVirtioBase, a, b))
+#define VirtioRead16(a,b) (((UINT16(*)(APTR, UINT16, UINT16)) 	_GETVECADDR(LibVirtioBase, 9))(LibVirtioBase, a, b))
+#define VirtioRead32(a,b) (((UINT32(*)(APTR, UINT16, UINT16)) 	_GETVECADDR(LibVirtioBase, 10))(LibVirtioBase, a, b))
+
+#define VirtioExchangeFeatures(a) (((void(*)(APTR, VirtioDevice*)) 	_GETVECADDR(LibVirtioBase, 11))(LibVirtioBase, a))
+#define VirtioAllocateQueues(a,b) (((int(*)(APTR, VirtioDevice*, INT32)) 	_GETVECADDR(LibVirtioBase, 12))(LibVirtioBase, a, b))
+#define VirtioInitQueues(a) (((int(*)(APTR, VirtioDevice)) 	_GETVECADDR(LibVirtioBase, 13))(LibVirtioBase, a))
+#define VirtioFreeQueues(a) (((void(*)(APTR, VirtioDevice)) 	_GETVECADDR(LibVirtioBase, 14))(LibVirtioBase, a))
+#define VirtioHostSupports(a,b) (((int(*)(APTR, VirtioDevice*, int)) 	_GETVECADDR(LibVirtioBase, 15))(LibVirtioBase, a, b))
+#define VirtioGuestSupports(a,b) (((int(*)(APTR, VirtioDevice*, int)) 	_GETVECADDR(LibVirtioBase, 16))(LibVirtioBase, a, b))
+
 
 #endif //lib_virtio_internal_h
 

@@ -24,7 +24,8 @@ APTR lib_virtio_FuncTab[] =
 	(void(*)) lib_virtio_AllocateQueues,
 	(void(*)) lib_virtio_InitQueues,
 	(void(*)) lib_virtio_FreeQueues,
-	//(void(*)) lib_virtio_KickQueues,
+	(void(*)) lib_virtio_HostSupports,
+	(void(*)) lib_virtio_GuestSupports,
 
 	(APTR) ((UINT32)-1)
 };

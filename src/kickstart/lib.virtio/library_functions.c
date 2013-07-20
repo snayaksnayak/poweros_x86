@@ -1,6 +1,6 @@
 #include "exec_funcs.h"
 #include "lib_virtio_internal.h"
-#include "lib_virtio.h"
+
 
 #define SysBase LibVirtioBase->SysBase
 
@@ -170,6 +170,15 @@ void lib_virtio_FreeQueues(LibVirtioBase *LibVirtioBase, VirtioDevice *dev)
 	dev->queues = NULL;
 }
 
-//void lib_virtio_KickQueues(LibVirtioBase *LibVirtioBase, VirtioDevice *dev)
-//{
-//}
+
+int lib_virtio_HostSupports(LibVirtioBase *LibVirtioBase, VirtioDevice *vd, int bit)
+{
+	return LibVirtio_supports(LibVirtioBase, vd, bit, 1);
+}
+
+int lib_virtio_GuestSupports(LibVirtioBase *LibVirtioBase, VirtioDevice *vd, int bit)
+{
+	return LibVirtio_supports(LibVirtioBase, vd, bit, 0);
+}
+
+

@@ -5,7 +5,7 @@
 #include "device.h"
 #include "io.h"
 #include "expansionbase.h"
-#include "lib_virtio_internal.h"
+#include "lib_virtio.h"
 
 
 #define VERSION  0

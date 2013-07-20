@@ -13,8 +13,18 @@ APTR lib_virtio_FuncTab[] =
 	(void(*)) lib_virtio_ExpungeLib,
 	(void(*)) lib_virtio_ExtFuncLib,
 
-	(void(*)) lib_virtio_add,
-	(void(*)) lib_virtio_sub,
+	(void(*)) lib_virtio_Write8,
+	(void(*)) lib_virtio_Write16,
+	(void(*)) lib_virtio_Write32,
+	(void(*)) lib_virtio_Read8,
+	(void(*)) lib_virtio_Read16,
+	(void(*)) lib_virtio_Read32,
+
+	(void(*)) lib_virtio_ExchangeFeatures,
+	(void(*)) lib_virtio_AllocateQueues,
+	(void(*)) lib_virtio_InitQueues,
+	(void(*)) lib_virtio_FreeQueues,
+	//(void(*)) lib_virtio_KickQueues,
 
 	(APTR) ((UINT32)-1)
 };
@@ -69,7 +79,7 @@ struct Resident LibVirtioRomTag =
 	RTC_MATCHWORD,
 	&LibVirtioRomTag,
 	&LibVirtioEndResident,
-	RTF_AUTOINIT | RTF_COLDSTART,
+	RTF_AUTOINIT | RTF_SINGLETASK,
 	LIB_VIRTIO_VERSION,
 	NT_LIBRARY,
 	-50,

@@ -3,6 +3,7 @@
 #include "resident.h"
 #include "exec_funcs.h"
 #include "expansion_funcs.h"
+#include "lib_virtio.h"
 
 
 char DevName[] = "virtio_blk.device";
@@ -47,71 +48,67 @@ struct VirtioBlkBase *virtio_blk_InitDev(struct VirtioBlkBase *VirtioBlkBase, UI
 //****************
 	struct ExpansionBase *ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0);
 	VirtioBlkBase->ExpansionBase = ExpansionBase;
-
 	if (VirtioBlkBase->ExpansionBase == NULL) {
 		DPrintF("virtio_blk_InitDev: Cant open expansion.library\n");
 		return NULL;
 	}
 
-	VirtioBlk *vb = &(VirtioBlkBase->vb);
 
-	if (!PCIFindDevice(VIRTIO_VENDOR_ID, VIRTIO_BLK_DEVICE_ID, &(vb->pciAddr))) {
-		DPrintF("virtio_blk_InitDev: No Virtio device found.");
+	struct LibVirtioBase *LibVirtioBase = (struct LibVirtioBase *)OpenLibrary("lib_virtio.library", 0);
+	VirtioBlkBase->LibVirtioBase = LibVirtioBase;
+	if (VirtioBlkBase->LibVirtioBase == NULL) {
+		DPrintF("virtio_blk_InitDev: Cant open lib_virtio.library\n");
 		return NULL;
 	}
-	else
-	{
-		DPrintF("virtio_blk_InitDev: Virtio block device found.\n");
-	}
 
-	DPrintF("virtio_blk_InitDev: (vb->pciAddr).bus %x\n", (vb->pciAddr).bus);
-	DPrintF("virtio_blk_InitDev: (vb->pciAddr).device %x\n", (vb->pciAddr).device);
-	DPrintF("virtio_blk_InitDev: (vb->pciAddr).function %x\n", (vb->pciAddr).function);
 
-	PCISetMemEnable(&vb->pciAddr, TRUE);
-	vb->io_addr = PCIGetBARAddr(&vb->pciAddr, 0);
-	DPrintF("virtio_blk_InitDev: ioAddress %x\n", vb->io_addr);
+	VirtioBlk *vb = &(VirtioBlkBase->vb);
+	VirtioDevice* vd = &(vb->vd);
 
-	vb->intLine = PCIGetIntrLine(&vb->pciAddr);
-	DPrintF("virtio_blk_InitDev: intLine %x\n", vb->intLine);
 
-	vb->intPin = PCIGetIntrPin(&vb->pciAddr);
-	DPrintF("virtio_blk_InitDev: intPin %x\n", vb->intPin);
+//1. setup the device.
+
+	//setup
+	VirtioBlk_setup(VirtioBlkBase, vb);
 
 	// Reset the device
-	virtio_write8(vb->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_RESET);
+	VirtioWrite8(vd->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_RESET);
 
 	// Ack the device
-	virtio_write8(vb->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_ACK);
+	VirtioWrite8(vd->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_ACK);
+
+
+//2. check if you can drive the device.
 
 	//driver supports these features
-	vb->features = blkf;
-	vb->num_features = sizeof(blkf) / sizeof(blkf[0]);
+	vd->features = blkf;
+	vd->num_features = sizeof(blkf) / sizeof(blkf[0]);
 
 	//exchange features
-	VirtioBlk_exchange_features(VirtioBlkBase, vb);
+	VirtioExchangeFeatures(vd);
 
 	// We know how to drive the device...
-	virtio_write8(vb->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_DRV);
+	VirtioWrite8(vd->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_DRV);
+
+
+//3. be ready to go.
 
 	// virtio blk has only 1 queue
-	VirtioBlk_alloc_phys_queues(VirtioBlkBase, vb, VIRTIO_BLK_NUM_QUEUES);
+	VirtioAllocateQueues(vd, VIRTIO_BLK_NUM_QUEUES);
 
 	//Allocate memory for headers and status
-	if (VirtioBlk_alloc_phys_requests(VirtioBlkBase, vb) != 1)
-	{
-		VirtioBlk_free_phys_queues(VirtioBlkBase, vb);
-		return NULL;
-	}
+	VirtioBlk_alloc_phys_requests(VirtioBlkBase, vb);
 
+	//collect configuration
 	VirtioBlk_configuration(VirtioBlkBase, vb);
 
 	//Driver is ready to go!
-	virtio_write8(vb->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_DRV_OK);
+	VirtioWrite8(vd->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_DRV_OK);
 
 
-//****************
+//4. start data transfer.
 
+/*
 	UINT32 sector_num;
 	UINT8 write = 0; //0 means "READ" a sector, 1 means "WRITE"
 	UINT8 buf[512]; //buffer to which data is read/write, fill this buffer to write into device
@@ -124,8 +121,8 @@ struct VirtioBlkBase *virtio_blk_InitDev(struct VirtioBlkBase *VirtioBlkBase, UI
 		memset(buf, 0, 512);
 		VirtioBlk_transfer(VirtioBlkBase, vb, sector_num, write, buf);
 	}
+*/
 
-//****************
 
 	return VirtioBlkBase;
 }

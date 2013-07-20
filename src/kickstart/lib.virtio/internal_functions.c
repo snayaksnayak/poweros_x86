@@ -27,6 +27,10 @@ int LibVirtio_alloc_phys_queue(LibVirtioBase *LibVirtioBase, struct virtio_queue
 
 	UINT32 addr;
 	q->unaligned_addr = AllocVec(q->ring_size, MEMF_FAST|MEMF_CLEAR);
+	if (q->unaligned_addr == NULL)
+	{
+		return 0;
+	}
 	DPrintF("q->unaligned_addr (%x)\n", q->unaligned_addr);
 	DPrintF("q->unaligned_addr + q->ring_size = (%x)\n", q->unaligned_addr + q->ring_size);
 
@@ -44,9 +48,10 @@ int LibVirtio_alloc_phys_queue(LibVirtioBase *LibVirtioBase, struct virtio_queue
 
 	q->data = AllocVec(sizeof(q->data[0]) * q->num, MEMF_FAST|MEMF_CLEAR);
 
-	if (q->data == NULL) {
+	if (q->data == NULL)
+	{
 		FreeVec(q->unaligned_addr);
-		q->unaligned_addr = NULL;
+		q->unaligned_addr = 0;
 		q->paddr = 0;
 		return 0;
 	}
@@ -56,9 +61,9 @@ int LibVirtio_alloc_phys_queue(LibVirtioBase *LibVirtioBase, struct virtio_queue
 
 void LibVirtio_init_phys_queue(LibVirtioBase *LibVirtioBase, struct virtio_queue *q)
 {
-
-	//memset(q->vaddr, 0, q->ring_size);
-	//memset(q->data, 0, sizeof(q->data[0]) * q->num);
+	//not needed because of MEMF_CLEAR
+	memset(q->unaligned_addr, 0, q->ring_size);
+	memset(q->data, 0, sizeof(q->data[0]) * q->num);
 
 	/* physical page in guest */
 	q->page = (UINT32)q->paddr / 4096;
@@ -70,19 +75,15 @@ void LibVirtio_init_phys_queue(LibVirtioBase *LibVirtioBase, struct virtio_queue
 	DPrintF("vring avail %x\n", q->vring.avail);
 	DPrintF("vring used %x\n", q->vring.used);
 
-	q->free_num = q->num;
-	q->free_head = 0;
-	q->free_tail = q->num - 1;
-	q->last_used = 0;
-
 	return;
 }
 
 void LibVirtio_free_phys_queue(LibVirtioBase *LibVirtioBase, struct virtio_queue *q)
 {
 	FreeVec(q->unaligned_addr);
+	q->unaligned_addr = 0;
 	q->paddr = 0;
-	q->num = 0;
+
 	FreeVec(q->data);
-	q->data = NULL;
+	q->data = 0;
 }

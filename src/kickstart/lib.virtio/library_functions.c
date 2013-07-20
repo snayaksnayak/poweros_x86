@@ -106,8 +106,8 @@ int lib_virtio_AllocateQueues(LibVirtioBase *LibVirtioBase, VirtioDevice *vd, IN
 	if (vd->queues == NULL)
 		return 0;
 
-	//not needed in because of MEMF_CLEAR
-	//memset(dev->queues, 0, num_queues * sizeof(dev->queues[0]));
+	//not needed because of MEMF_CLEAR
+	memset(vd->queues, 0, num_queues * sizeof(vd->queues[0]));
 
 	return r;
 }
@@ -115,7 +115,7 @@ int lib_virtio_AllocateQueues(LibVirtioBase *LibVirtioBase, VirtioDevice *vd, IN
 
 int lib_virtio_InitQueues(LibVirtioBase *LibVirtioBase, VirtioDevice *vd)
 {
-	/* Initialize all queues */
+	//Initialize all queues
 	int i, j, r;
 	struct virtio_queue *q;
 
@@ -123,31 +123,30 @@ int lib_virtio_InitQueues(LibVirtioBase *LibVirtioBase, VirtioDevice *vd)
 	{
 		q = &vd->queues[i];
 
-		/* select the queue */
+		//select the queue
 		VirtioWrite16(vd->io_addr, VIRTIO_QSEL_OFFSET, i);
 		q->num = VirtioRead16(vd->io_addr, VIRTIO_QSIZE_OFFSET);
 		DPrintF("Queue %d, q->num (%d)\n", i, q->num);
 		if (q->num & (q->num - 1)) {
 			DPrintF("Queue %d num=%d not ^2", i, q->num);
 			r = 0;
-			goto free_phys_queues;
+			goto free;
 		}
 
 		r = LibVirtio_alloc_phys_queue(LibVirtioBase,q);
 
 		if (r != 1)
-			goto free_phys_queues;
+			goto free;
 
 		LibVirtio_init_phys_queue(LibVirtioBase, q);
 
-		/* Let the host know about the guest physical page */
+		//Let the host know about the guest physical page
 		VirtioWrite32(vd->io_addr, VIRTIO_QADDR_OFFSET, q->page);
 	}
 
 	return 1;
 
-/* Error path */
-free_phys_queues:
+free:
 	for (j = 0; j < i; j++)
 	{
 		LibVirtio_free_phys_queue(LibVirtioBase, &vd->queues[i]);
@@ -158,16 +157,16 @@ free_phys_queues:
 
 
 
-void lib_virtio_FreeQueues(LibVirtioBase *LibVirtioBase, VirtioDevice *dev)
+void lib_virtio_FreeQueues(LibVirtioBase *LibVirtioBase, VirtioDevice *vd)
 {
 	int i;
-	for (i = 0; i < dev->num_queues; i++)
+	for (i = 0; i < vd->num_queues; i++)
 	{
-		LibVirtio_free_phys_queue(LibVirtioBase, &dev->queues[i]);
+		LibVirtio_free_phys_queue(LibVirtioBase, &vd->queues[i]);
 	}
 
-	dev->num_queues = 0;
-	dev->queues = NULL;
+	FreeVec(vd->queues);
+	vd->queues = 0;
 }
 
 

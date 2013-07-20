@@ -41,7 +41,7 @@ DPrintF("Inside VirtioBlkWrite!\n");
 
 void VirtioBlkGetDeviceInfo(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 {
-	DPrintF("Inside TimerSetSysTime!\n");
+	DPrintF("Inside VirtioBlkGetDeviceInfo!\n");
 	UINT32 ipl = Disable();
 	//do something critical here
 	Enable(ipl);

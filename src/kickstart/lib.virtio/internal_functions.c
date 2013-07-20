@@ -29,6 +29,7 @@ int LibVirtio_alloc_phys_queue(LibVirtioBase *LibVirtioBase, struct virtio_queue
 	q->unaligned_addr = AllocVec(q->ring_size, MEMF_FAST|MEMF_CLEAR);
 	if (q->unaligned_addr == NULL)
 	{
+		DPrintF("Couln't allocate memory for queue, of size %d\n", q->ring_size);
 		return 0;
 	}
 	DPrintF("q->unaligned_addr (%x)\n", q->unaligned_addr);
@@ -43,9 +44,6 @@ int LibVirtio_alloc_phys_queue(LibVirtioBase *LibVirtioBase, struct virtio_queue
 
 	q->paddr = (void*)addr;
 
-	if (q->unaligned_addr == NULL)
-		return 0;
-
 	q->data = AllocVec(sizeof(q->data[0]) * q->num, MEMF_FAST|MEMF_CLEAR);
 
 	if (q->data == NULL)
@@ -53,6 +51,7 @@ int LibVirtio_alloc_phys_queue(LibVirtioBase *LibVirtioBase, struct virtio_queue
 		FreeVec(q->unaligned_addr);
 		q->unaligned_addr = 0;
 		q->paddr = 0;
+		DPrintF("Couln't allocate memory for data pointers, of size %d\n", q->num);
 		return 0;
 	}
 

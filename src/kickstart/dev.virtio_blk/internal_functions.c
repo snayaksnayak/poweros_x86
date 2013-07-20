@@ -2,6 +2,7 @@
 #include "virtio_blk_internal.h"
 #include "expansion_funcs.h"
 #include "lib_virtio.h"
+#include "arch_config.h"
 
 #define SysBase VirtioBlkBase->VirtioBlk_SysBase
 
@@ -35,27 +36,27 @@ int VirtioBlk_setup(VirtioBlkBase *VirtioBlkBase, VirtioBlk *vb)
 	VirtioDevice* vd = &(vb->vd);
 
 	if (!PCIFindDevice(VIRTIO_VENDOR_ID, VIRTIO_BLK_DEVICE_ID, &(vd->pciAddr))) {
-		DPrintF("virtio_blk_InitDev: No Virtio device found.");
-		return NULL;
+		DPrintF("VirtioBlk_setup: No Virtio device found.");
+		return 0;
 	}
 	else
 	{
-		DPrintF("virtio_blk_InitDev: Virtio block device found.\n");
+		DPrintF("VirtioBlk_setup: Virtio block device found.\n");
 	}
 
-	DPrintF("virtio_blk_InitDev: (vd->pciAddr).bus %x\n", (vd->pciAddr).bus);
-	DPrintF("virtio_blk_InitDev: (vd->pciAddr).device %x\n", (vd->pciAddr).device);
-	DPrintF("virtio_blk_InitDev: (vd->pciAddr).function %x\n", (vd->pciAddr).function);
+	DPrintF("VirtioBlk_setup: (vd->pciAddr).bus %x\n", (vd->pciAddr).bus);
+	DPrintF("VirtioBlk_setup: (vd->pciAddr).device %x\n", (vd->pciAddr).device);
+	DPrintF("VirtioBlk_setup: (vd->pciAddr).function %x\n", (vd->pciAddr).function);
 
 	PCISetMemEnable(&vd->pciAddr, TRUE);
 	vd->io_addr = PCIGetBARAddr(&vd->pciAddr, 0);
-	DPrintF("virtio_blk_InitDev: ioAddress %x\n", vd->io_addr);
+	DPrintF("VirtioBlk_setup: ioAddress %x\n", vd->io_addr);
 
 	vd->intLine = PCIGetIntrLine(&vd->pciAddr);
-	DPrintF("virtio_blk_InitDev: intLine %x\n", vd->intLine);
+	DPrintF("VirtioBlk_setup: intLine %x\n", vd->intLine);
 
 	vd->intPin = PCIGetIntrPin(&vd->pciAddr);
-	DPrintF("virtio_blk_InitDev: intPin %x\n", vd->intPin);
+	DPrintF("VirtioBlk_setup: intPin %x\n", vd->intPin);
 
 	return 1;
 }
@@ -67,14 +68,19 @@ int VirtioBlk_alloc_phys_requests(VirtioBlkBase *VirtioBlkBase, VirtioBlk *vb)
 	vb->hdrs = AllocVec(VIRTIO_BLK_NUM_QUEUES * sizeof(vb->hdrs[0]),
 				MEMF_FAST|MEMF_CLEAR);
 
-	if (!vb->hdrs)
+	if (vb->hdrs == NULL)
+	{
+		DPrintF("Couldn't allocate memory for vb->hdrs\n");
 		return 0;
+	}
 
 	vb->status = AllocVec(VIRTIO_BLK_NUM_QUEUES * sizeof(vb->status[0]),
 				  MEMF_FAST|MEMF_CLEAR);
 
-	if (!vb->status) {
+	if (vb->status == NULL)
+	{
 		FreeVec(vb->hdrs);
+		DPrintF("Couldn't allocate memory for vb->status\n");
 		return 0;
 	}
 
@@ -117,7 +123,7 @@ int VirtioBlk_configuration(VirtioBlkBase *VirtioBlkBase, VirtioBlk *vb)
 		DPrintF("Block Size: %d\n", vb->Info.blk_size);
 	}
 
-	return 0;
+	return 1;
 }
 
 void test_mhz_delay(APTR, int);
@@ -126,8 +132,9 @@ void VirtioBlk_transfer(VirtioBlkBase *VirtioBlkBase, VirtioBlk* vb, UINT32 sect
 	struct LibVirtioBase* LibVirtioBase = VirtioBlkBase->LibVirtioBase;
 	VirtioDevice* vd = &(vb->vd);
 
-	//prepare first out_hdr, since we have only one, replace 0 by a variable
-	//memset(&hdrs[0], 0, sizeof(hdrs[0]));
+	//prepare first out_hdr, since we have only one we are using 0,
+	//otherwise replace 0 by a variable
+	memset(&(vb->hdrs[0]), 0, sizeof(vb->hdrs[0]));
 
 	if(write == 1)
 	{

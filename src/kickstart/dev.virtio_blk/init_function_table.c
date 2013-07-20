@@ -4,6 +4,8 @@
 #include "exec_funcs.h"
 #include "expansion_funcs.h"
 #include "lib_virtio.h"
+#include "arch_config.h"
+
 
 
 char DevName[] = "virtio_blk.device";
@@ -96,6 +98,9 @@ struct VirtioBlkBase *virtio_blk_InitDev(struct VirtioBlkBase *VirtioBlkBase, UI
 	// virtio blk has only 1 queue
 	VirtioAllocateQueues(vd, VIRTIO_BLK_NUM_QUEUES);
 
+	//init queues
+	VirtioInitQueues(vd);
+
 	//Allocate memory for headers and status
 	VirtioBlk_alloc_phys_requests(VirtioBlkBase, vb);
 
@@ -108,7 +113,6 @@ struct VirtioBlkBase *virtio_blk_InitDev(struct VirtioBlkBase *VirtioBlkBase, UI
 
 //4. start data transfer.
 
-/*
 	UINT32 sector_num;
 	UINT8 write = 0; //0 means "READ" a sector, 1 means "WRITE"
 	UINT8 buf[512]; //buffer to which data is read/write, fill this buffer to write into device
@@ -121,7 +125,7 @@ struct VirtioBlkBase *virtio_blk_InitDev(struct VirtioBlkBase *VirtioBlkBase, UI
 		memset(buf, 0, 512);
 		VirtioBlk_transfer(VirtioBlkBase, vb, sector_num, write, buf);
 	}
-*/
+
 
 
 	return VirtioBlkBase;

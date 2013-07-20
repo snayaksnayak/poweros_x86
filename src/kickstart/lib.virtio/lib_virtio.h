@@ -107,8 +107,8 @@ int VirtioGuestSupports(VirtioDevice *vd, int bit);
 
 #define VirtioExchangeFeatures(a) (((void(*)(APTR, VirtioDevice*)) 	_GETVECADDR(LibVirtioBase, 11))(LibVirtioBase, a))
 #define VirtioAllocateQueues(a,b) (((int(*)(APTR, VirtioDevice*, INT32)) 	_GETVECADDR(LibVirtioBase, 12))(LibVirtioBase, a, b))
-#define VirtioInitQueues(a) (((int(*)(APTR, VirtioDevice)) 	_GETVECADDR(LibVirtioBase, 13))(LibVirtioBase, a))
-#define VirtioFreeQueues(a) (((void(*)(APTR, VirtioDevice)) 	_GETVECADDR(LibVirtioBase, 14))(LibVirtioBase, a))
+#define VirtioInitQueues(a) (((int(*)(APTR, VirtioDevice*)) 	_GETVECADDR(LibVirtioBase, 13))(LibVirtioBase, a))
+#define VirtioFreeQueues(a) (((void(*)(APTR, VirtioDevice*)) 	_GETVECADDR(LibVirtioBase, 14))(LibVirtioBase, a))
 #define VirtioHostSupports(a,b) (((int(*)(APTR, VirtioDevice*, int)) 	_GETVECADDR(LibVirtioBase, 15))(LibVirtioBase, a, b))
 #define VirtioGuestSupports(a,b) (((int(*)(APTR, VirtioDevice*, int)) 	_GETVECADDR(LibVirtioBase, 16))(LibVirtioBase, a, b))
 

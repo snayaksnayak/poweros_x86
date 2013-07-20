@@ -96,7 +96,10 @@ int lib_virtio_AllocateQueues(LibVirtioBase *LibVirtioBase, VirtioDevice *vd, IN
 
 	// Assume there's no device with more than 256 queues
 	if (num_queues < 0 || num_queues > 256)
+	{
+		DPrintF("Invalid num_queues!\n");
 		return 0;
+	}
 
 	vd->num_queues = num_queues;
 
@@ -104,7 +107,10 @@ int lib_virtio_AllocateQueues(LibVirtioBase *LibVirtioBase, VirtioDevice *vd, IN
 	vd->queues = AllocVec(num_queues * sizeof(vd->queues[0]), MEMF_FAST|MEMF_CLEAR);
 
 	if (vd->queues == NULL)
+	{
+		DPrintF("Couldn't allocate memory for %d queues\n", vd->num_queues);
 		return 0;
+	}
 
 	//not needed because of MEMF_CLEAR
 	memset(vd->queues, 0, num_queues * sizeof(vd->queues[0]));
@@ -128,7 +134,7 @@ int lib_virtio_InitQueues(LibVirtioBase *LibVirtioBase, VirtioDevice *vd)
 		q->num = VirtioRead16(vd->io_addr, VIRTIO_QSIZE_OFFSET);
 		DPrintF("Queue %d, q->num (%d)\n", i, q->num);
 		if (q->num & (q->num - 1)) {
-			DPrintF("Queue %d num=%d not ^2", i, q->num);
+			DPrintF("Queue %d num=%d not ^2\n", i, q->num);
 			r = 0;
 			goto free;
 		}
@@ -136,7 +142,10 @@ int lib_virtio_InitQueues(LibVirtioBase *LibVirtioBase, VirtioDevice *vd)
 		r = LibVirtio_alloc_phys_queue(LibVirtioBase,q);
 
 		if (r != 1)
+		{
+			DPrintF("Couldn't allocate queue number %d\n", i);
 			goto free;
+		}
 
 		LibVirtio_init_phys_queue(LibVirtioBase, q);
 

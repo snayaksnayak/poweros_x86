@@ -82,6 +82,7 @@ struct VirtioBlkRequest
     struct IOStdReq node;
     struct VirtioBlkDeviceInfo info;
     UINT32 sector_num;
+    UINT8 write;
     UINT8* buf;
 };
 
@@ -150,6 +151,7 @@ void VirtioBlkGetDeviceInfo(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq
 //internals
 void VirtioBlk_end_command(VirtioBlkBase *VirtioBlkBase, UINT32 error, struct IOStdReq *ioreq);
 void VirtioBlk_queue_command(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq);
+void VirtioBlk_process_request(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq);
 
 int VirtioBlk_setup(VirtioBlkBase *VirtioBlkBase,VirtioBlk *vb);
 int VirtioBlk_alloc_phys_requests(VirtioBlkBase *VirtioBlkBase,VirtioBlk *vb);

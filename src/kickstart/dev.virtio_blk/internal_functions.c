@@ -16,18 +16,42 @@ void VirtioBlk_queue_command(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *iore
 	if (ioreq->io_Error == 0)
 	{
 		PutMsg(&unit->unit_MsgPort, &ioreq->io_Message);
+		//if it is the head request
+		if (GetHead(&unit->unit_MsgPort.mp_MsgList) == &ioreq->io_Message.mn_Node)
+		{
+			//start processing
+			VirtioBlk_process_request(VirtioBlkBase, ioreq);
+		}
 	}
 	Enable(ipl);
 	return;
 }
 
+
 void VirtioBlk_end_command(VirtioBlkBase *VirtioBlkBase, UINT32 error, struct IOStdReq *ioreq)
 {
 	ioreq->io_Error = error;
-	if (TEST_BITS(ioreq->io_Flags, IOF_QUICK)) return;
-	ReplyMsg((struct Message *)ioreq);
 	return;
 }
+
+
+void VirtioBlk_process_request(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
+{
+	UINT32 ipl = Disable();
+	//collect unit from request structure
+	struct Unit	*unit = ioreq->io_Unit;
+	//collect head request from unit's request queue
+	struct VirtioBlkRequest *head_req = (struct VirtioBlkRequest *)GetHead(&unit->unit_MsgPort.mp_MsgList);
+
+	VirtioBlk *vb = &(VirtioBlkBase->vb);
+	UINT32 sector_num = head_req->sector_num;
+	UINT8 write = head_req->write;
+	UINT8 *buf = head_req->buf;
+	VirtioBlk_transfer(VirtioBlkBase, vb, sector_num, write, buf);
+	Enable(ipl);
+	return;
+}
+
 
 int VirtioBlk_setup(VirtioBlkBase *VirtioBlkBase, VirtioBlk *vb)
 {

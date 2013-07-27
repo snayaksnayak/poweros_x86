@@ -72,6 +72,7 @@ struct VirtioBlkRequest
     struct IOStdReq node;
     struct VirtioBlkDeviceInfo info;
     UINT32 sector_num;
+    UINT8 write;
     UINT8* buf;
 };
 

@@ -6,19 +6,20 @@ __attribute__((no_instrument_function)) BOOL VirtioBlkIRQServer(UINT32 number, V
 {
 	DPrintF("VirtioBlkIRQServer\n");
 
-	struct VirtioBlkRequest *vbr, *vbrtmp;
+	struct  Unit *unit = (struct  Unit *)&VirtioBlkBase->unit;
+	struct VirtioBlkRequest *head_req = (struct VirtioBlkRequest *)GetHead(&unit->unit_MsgPort.mp_MsgList);
 
-	ForeachNodeSafe(&VirtioBlkBase->unit.unit_MsgPort.mp_MsgList, vbr, vbrtmp)
+	DPrintF("One request complete\n");
+	Remove((struct Node *)head_req);
+	head_req->node.io_Error = 0;
+	ReplyMsg((struct Message *)head_req);
+
+	struct IOStdReq* next_req = (struct IOStdReq *)GetHead(&unit->unit_MsgPort.mp_MsgList);
+	if(next_req != NULL)
 	{
-		if (0)
-		{
-			DPrintF("Found something from list\n");
-			Remove((struct Node *)vbr);
-			vbr->node.io_Error = 0;
-			ReplyMsg((struct Message *)vbr);
-		}
+		//start processing another request
+		VirtioBlk_process_request(VirtioBlkBase, next_req);
 	}
-
 
 	return 0; // we return 0 so that Tick() can run, otherwise we would cut off Schedule()
 }

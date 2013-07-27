@@ -113,6 +113,7 @@ struct VirtioBlkBase *virtio_blk_InitDev(struct VirtioBlkBase *VirtioBlkBase, UI
 
 //4. start data transfer.
 
+/*
 	UINT32 sector_num;
 	UINT8 write = 0; //0 means "READ" a sector, 1 means "WRITE"
 	UINT8 buf[512]; //buffer to which data is read/write, fill this buffer to write into device
@@ -125,7 +126,7 @@ struct VirtioBlkBase *virtio_blk_InitDev(struct VirtioBlkBase *VirtioBlkBase, UI
 		memset(buf, 0, 512);
 		VirtioBlk_transfer(VirtioBlkBase, vb, sector_num, write, buf);
 	}
-
+*/
 
 
 	return VirtioBlkBase;

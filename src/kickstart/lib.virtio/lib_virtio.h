@@ -5,6 +5,7 @@
 
 #include "types.h"
 #include "virtio_ring.h"
+#include "expansionbase.h"
 
 //vendor id for all virtio devices
 #define VIRTIO_VENDOR_ID 0x1af4

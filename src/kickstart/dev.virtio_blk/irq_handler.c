@@ -5,6 +5,15 @@
 __attribute__((no_instrument_function)) BOOL VirtioBlkIRQServer(UINT32 number, VirtioBlkBase *VirtioBlkBase, APTR SysBase)
 {
 	DPrintF("VirtioBlkIRQServer\n");
+	struct LibVirtioBase *LibVirtioBase = VirtioBlkBase->LibVirtioBase;
+
+	VirtioBlk *vb = &(VirtioBlkBase->vb);
+	VirtioDevice* vd = &(vb->vd);
+
+	//See if virtio device generated an interrupt(1) or not(0)
+	UINT8 isr;
+	isr=VirtioRead8(vd->io_addr, VIRTIO_ISR_STATUS_OFFSET);
+	DPrintF("VirtioBlkIRQServer: isr= %d\n", isr);
 
 	struct  Unit *unit = (struct  Unit *)&VirtioBlkBase->unit;
 	struct VirtioBlkRequest *head_req = (struct VirtioBlkRequest *)GetHead(&unit->unit_MsgPort.mp_MsgList);

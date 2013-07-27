@@ -6,6 +6,7 @@
 #include "types.h"
 #include "device.h"
 #include "io.h"
+#include "lib_virtio.h"
 
 // Units
 //#define UNIT_DISK    0

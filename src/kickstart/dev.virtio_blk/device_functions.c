@@ -43,10 +43,14 @@ void virtio_blk_BeginIO(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 	UINT8 cmd = ioreq->io_Command;
 	ioreq->io_Error = 0;
 
-	if (cmd != CMD_START
-	|| cmd != CMD_STOP
-	|| cmd != CMD_READ
-	|| cmd != CMD_WRITE)
+	if (cmd == CMD_START
+	|| cmd == CMD_STOP
+	|| cmd == CMD_READ
+	|| cmd == CMD_WRITE)
+	{
+		//valid command
+	}
+	else
 	{
 		cmd = CMD_INVALID; // Invalidate the command.
 	}

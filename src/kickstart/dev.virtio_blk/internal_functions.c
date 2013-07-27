@@ -206,12 +206,13 @@ void VirtioBlk_transfer(VirtioBlkBase *VirtioBlkBase, VirtioBlk* vb, UINT32 sect
 	//notify
 	VirtioWrite16(vd->io_addr, VIRTIO_QNOTFIY_OFFSET, 0); //notify that 1st queue (0) of this device has been updated
 
+/*
 	//give some delay
 	test_mhz_delay(SysBase, 1);
 
 	DPrintF("vb->status[0] %d\n", vb->status[0]);
 
-/*
+
 	int j=0;
 
 	DPrintF("(vd->queues[0]).vring.used->flags %d\n", (vd->queues[0]).vring.used->flags);
@@ -228,7 +229,7 @@ void VirtioBlk_transfer(VirtioBlkBase *VirtioBlkBase, VirtioBlk* vb, UINT32 sect
 	{
 		DPrintF("(vd->queues[0]).vring.avail->ring[%d] %d\n", j, (vd->queues[0]).vring.avail->ring[j]);
 	}
-*/
+
 
 	//See if virtio device generated an interrupt(1) or not(0)
 	UINT8 isr;
@@ -239,5 +240,5 @@ void VirtioBlk_transfer(VirtioBlkBase *VirtioBlkBase, VirtioBlk* vb, UINT32 sect
 	DPrintF("virtio_blk_transfer: buf[1]= %x\n", buf[1]);
 	DPrintF("virtio_blk_transfer: buf[2]= %x\n", buf[2]);
 	DPrintF("virtio_blk_transfer: buf[3]= %x\n", buf[3]);
-
+*/
 }

@@ -7,6 +7,9 @@
 #include "keyboard.h"
 #include "inputevent.h"
 #include "memory.h"
+
+#include "virtio_blk.h"
+
 // This is a Testsuite for implementations on the OS.
 // Since we boot out of the ROM, we need an Resident Structure
 
@@ -955,6 +958,87 @@ void d_showint(int addr, struct SysBase *SysBase)
 void test_new_memory();
 void test_library();
 void DetectVirtio(APTR SysBase);
+void test_virtio_blk(APTR SysBase);
+
+void test_virtio_blk(APTR SysBase)
+{
+	struct MsgPort *mp=NULL;
+	struct VirtioBlkRequest *io=NULL;
+
+	// We need a proper MsgPort to get Messages
+	mp = CreateMsgPort();
+	if (mp == NULL)
+	{
+		DPrintF("Couldnt create Message port (no Memory?)\n");
+		goto end;
+	}
+
+	// Now we need an TimeRequest Structure
+	io = CreateIORequest(mp, sizeof(struct VirtioBlkRequest));
+	if (io == NULL)
+	{
+		DPrintF("Couldnt create TimeRequest (no Memory?)\n");
+		goto end;
+	}
+
+	//UNIT_MICROHZ works used for msec delays
+	INT32 ret = OpenDevice("virtio_blk.device", 0, (struct IORequest *)io, 0);
+	if (ret != 0)
+	{
+		DPrintF("OpenDevice Timer failed for virtio_blk unit 0\n");
+		goto end;
+	}
+
+	// lets try a to start the device
+	io->node.io_Command = CMD_START;
+
+	// post request to the timer device in sync way
+	DPrintF("We will start the device\n");
+	DoIO((struct IORequest *) io );
+	DPrintF("Return after starting the device\n");
+
+	UINT32 i;
+	for(i = 0; i < 8; i++) //8192 max
+	{
+		// lets try a to read a sector from the device
+		io->node.io_Command = CMD_READ;
+		io->sector_num = i;
+		io->write = 0;
+		UINT8 buf[512];
+		memset(buf, 0, 512);
+		io->buf = buf;
+
+		// post request to the timer device in sync way
+		DPrintF("We will read a sector from the device\n");
+		DoIO((struct IORequest *) io );
+		DPrintF("Return after reading a sector from the device\n");
+
+		DPrintF("buf[0]= %x\n", buf[0]);
+		DPrintF("buf[1]= %x\n", buf[1]);
+		DPrintF("buf[2]= %x\n", buf[2]);
+		DPrintF("buf[3]= %x\n", buf[3]);
+	}
+	// Close Timer device
+	DPrintF("Closing Timer Device UNIT_VBLANK\n");
+	CloseDevice((struct IORequest *)io);
+	DeleteIORequest((struct IORequest *)io);
+	DeleteMsgPort(mp);
+
+	mp = NULL;
+	io = NULL;
+
+end:
+
+	if (io != NULL)
+	{
+		DeleteIORequest((struct IORequest *)io);
+	}
+
+	if (mp != NULL)
+	{
+		DeleteMsgPort(mp);
+	}
+}
 
 static void test_TestTask(APTR data, struct SysBase *SysBase)
 {
@@ -987,6 +1071,8 @@ static void test_TestTask(APTR data, struct SysBase *SysBase)
 
 	DPrintF("SysBase %x\n", SysBase);
 	DPrintF("SysBase->IDNestcnt %x\n", SysBase->IDNestCnt);
+
+	test_virtio_blk(SysBase);
 
 	goto out;
 

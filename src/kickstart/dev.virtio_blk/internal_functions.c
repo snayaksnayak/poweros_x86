@@ -43,7 +43,7 @@ void VirtioBlk_process_request(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *io
 	//collect head request from unit's request queue
 	struct VirtioBlkRequest *head_req = (struct VirtioBlkRequest *)GetHead(&unit->unit_MsgPort.mp_MsgList);
 
-	VirtioBlk *vb = &(VirtioBlkBase->vb);
+	VirtioBlk *vb = &(((struct VirtioBlkUnit*)ioreq->io_Unit)->vb);
 	UINT32 sector_num = head_req->sector_num;
 	UINT8 write = head_req->write;
 	UINT8 *buf = head_req->buf;
@@ -53,13 +53,13 @@ void VirtioBlk_process_request(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *io
 }
 
 
-int VirtioBlk_setup(VirtioBlkBase *VirtioBlkBase, VirtioBlk *vb)
+int VirtioBlk_setup(VirtioBlkBase *VirtioBlkBase, VirtioBlk *vb, INT32 unit_num)
 {
 	struct ExpansionBase *ExpansionBase = VirtioBlkBase->ExpansionBase;
 
 	VirtioDevice* vd = &(vb->vd);
 
-	if (!PCIFindDevice(VIRTIO_VENDOR_ID, VIRTIO_BLK_DEVICE_ID, &(vd->pciAddr))) {
+	if (!PCIFindDeviceByUnit(VIRTIO_VENDOR_ID, VIRTIO_BLK_DEVICE_ID, &(vd->pciAddr), unit_num)) {
 		DPrintF("VirtioBlk_setup: No Virtio device found.");
 		return 0;
 	}
@@ -190,7 +190,11 @@ void VirtioBlk_transfer(VirtioBlkBase *VirtioBlkBase, VirtioBlk* vb, UINT32 sect
 
 	(vd->queues[0]).vring.desc[1].addr = (UINT32)buf;
 	(vd->queues[0]).vring.desc[1].len = 512;
-	(vd->queues[0]).vring.desc[1].flags = VRING_DESC_F_NEXT | VRING_DESC_F_WRITE;
+	(vd->queues[0]).vring.desc[1].flags = VRING_DESC_F_NEXT;
+	if(write == 0) //for reading sector, say that, this buffer is empty and writable
+	{
+		(vd->queues[0]).vring.desc[1].flags |= VRING_DESC_F_WRITE;
+	}
 	(vd->queues[0]).vring.desc[1].next = 2;
 
 	(vd->queues[0]).vring.desc[2].addr = (UINT32)&(vb->status[0]);

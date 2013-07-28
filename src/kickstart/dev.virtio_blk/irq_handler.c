@@ -7,15 +7,37 @@ __attribute__((no_instrument_function)) BOOL VirtioBlkIRQServer(UINT32 number, V
 	DPrintF("VirtioBlkIRQServer\n");
 	struct LibVirtioBase *LibVirtioBase = VirtioBlkBase->LibVirtioBase;
 
-	VirtioBlk *vb = &(VirtioBlkBase->vb);
-	VirtioDevice* vd = &(vb->vd);
+	VirtioBlk *vb;
+	VirtioDevice* vd;
+	struct  Unit *unit;
+	int unit_num;
 
-	//See if virtio device generated an interrupt(1) or not(0)
-	UINT8 isr;
-	isr=VirtioRead8(vd->io_addr, VIRTIO_ISR_STATUS_OFFSET);
-	DPrintF("VirtioBlkIRQServer: isr= %d\n", isr);
+	//find out which unit generated this irq
+	for (unit_num=0; unit_num < VB_UNIT_MAX; unit_num++)
+	{
+		vb = &((VirtioBlkBase->VirtioBlkUnit[unit_num]).vb);
+		vd = &(vb->vd);
 
-	struct  Unit *unit = (struct  Unit *)&VirtioBlkBase->unit;
+		//See if virtio device generated an interrupt(1) or not(0)
+		UINT8 isr;
+		isr=VirtioRead8(vd->io_addr, VIRTIO_ISR_STATUS_OFFSET);
+		DPrintF("VirtioBlkIRQServer: isr= %d\n", isr);
+
+		if(isr == 1)
+		{
+			break;
+		}
+	}
+
+	if(unit_num == VB_UNIT_MAX)
+	{
+		//No unit generated this irq!
+		//Surprise!
+		return 0;
+	}
+
+	//now use the found unit_num to continue processing
+	unit = (struct  Unit *)&((VirtioBlkBase->VirtioBlkUnit[unit_num]).vb_unit);
 	struct VirtioBlkRequest *head_req = (struct VirtioBlkRequest *)GetHead(&unit->unit_MsgPort.mp_MsgList);
 
 	DPrintF("One request complete\n");

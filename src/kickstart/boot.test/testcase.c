@@ -973,19 +973,19 @@ void test_virtio_blk(APTR SysBase)
 		goto end;
 	}
 
-	// Now we need an TimeRequest Structure
+	// Now we need a VirtioBlkRequest Structure
 	io = CreateIORequest(mp, sizeof(struct VirtioBlkRequest));
 	if (io == NULL)
 	{
-		DPrintF("Couldnt create TimeRequest (no Memory?)\n");
+		DPrintF("Couldnt create VirtioBlkRequest (no Memory?)\n");
 		goto end;
 	}
 
-	//UNIT_MICROHZ works used for msec delays
-	INT32 ret = OpenDevice("virtio_blk.device", 0, (struct IORequest *)io, 0);
+	//lets open the device
+	INT32 ret = OpenDevice("virtio_blk.device", 1, (struct IORequest *)io, 0);
 	if (ret != 0)
 	{
-		DPrintF("OpenDevice Timer failed for virtio_blk unit 0\n");
+		DPrintF("OpenDevice virtio_blk failed for virtio_blk unit 0\n");
 		goto end;
 	}
 
@@ -1002,13 +1002,17 @@ void test_virtio_blk(APTR SysBase)
 	{
 		// lets try a to read a sector from the device
 		io->node.io_Command = CMD_READ;
-		io->sector_num = i;
 		io->write = 0;
+
+		//io->node.io_Command = CMD_WRITE;
+		//io->write = 1;
+
+		io->sector_num = i;
 		UINT8 buf[512];
-		memset(buf, 0, 512);
+		memset(buf, 0x00, 512);
 		io->buf = buf;
 
-		// post request to the timer device in sync way
+		// post request to the virtio device in sync way
 		DPrintF("We will read a sector from the device\n");
 		DoIO((struct IORequest *) io );
 		DPrintF("Return after reading a sector from the device\n");
@@ -1018,8 +1022,8 @@ void test_virtio_blk(APTR SysBase)
 		DPrintF("buf[2]= %x\n", buf[2]);
 		DPrintF("buf[3]= %x\n", buf[3]);
 	}
-	// Close Timer device
-	DPrintF("Closing Timer Device UNIT_VBLANK\n");
+	// Close device
+	DPrintF("Closing virtio_blk Device 0\n");
 	CloseDevice((struct IORequest *)io);
 	DeleteIORequest((struct IORequest *)io);
 	DeleteMsgPort(mp);

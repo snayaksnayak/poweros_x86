@@ -17,10 +17,7 @@
 #define VIRTIO_BLK_INT_PRI 0
 
 // Units
-//#define UNIT_DISK    0
-//#define UNIT_CD    1
-//#define UNIT_DVD    2
-//#define UNIT_MAX		3
+#define VB_UNIT_MAX		4
 
 // non standard async commands
 #define VB_GETDEVICEINFO (CMD_NONSTD+0)
@@ -107,6 +104,12 @@ typedef struct VirtioBlk
 
 } VirtioBlk;
 
+struct VirtioBlkUnit
+{
+	struct Unit vb_unit;
+	struct VirtioBlk vb;
+};
+
 typedef struct VirtioBlkBase
 {
 	struct Device		Device;
@@ -117,9 +120,8 @@ typedef struct VirtioBlkBase
 	UINT32				VirtioBlkIRQ;
 	struct Interrupt	*VirtioBlkIntServer;
 
-	struct Unit unit;
-
-	struct VirtioBlk vb;
+	struct VirtioBlkUnit VirtioBlkUnit[VB_UNIT_MAX];
+	UINT32 NumAvailUnits;
 
 } VirtioBlkBase;
 
@@ -153,7 +155,7 @@ void VirtioBlk_end_command(VirtioBlkBase *VirtioBlkBase, UINT32 error, struct IO
 void VirtioBlk_queue_command(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq);
 void VirtioBlk_process_request(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq);
 
-int VirtioBlk_setup(VirtioBlkBase *VirtioBlkBase,VirtioBlk *vb);
+int VirtioBlk_setup(VirtioBlkBase *VirtioBlkBase,VirtioBlk *vb, INT32 unit_num);
 int VirtioBlk_alloc_phys_requests(VirtioBlkBase *VirtioBlkBase,VirtioBlk *vb);
 int VirtioBlk_configuration(VirtioBlkBase *VirtioBlkBase, VirtioBlk *vb);
 void VirtioBlk_transfer(VirtioBlkBase *VirtioBlkBase, VirtioBlk* vb, UINT32 sector_num, UINT8 write, UINT8* buf);

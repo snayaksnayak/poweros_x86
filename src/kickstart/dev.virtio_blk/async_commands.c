@@ -13,7 +13,7 @@ void VirtioBlkInvalid(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 
 void VirtioBlkStart(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 {
-	VirtioBlk *vb = &(VirtioBlkBase->vb);
+	VirtioBlk *vb = &(((struct VirtioBlkUnit*)ioreq->io_Unit)->vb);
 	VirtioDevice* vd = &(vb->vd);
 
 	UINT32 irq = vd->intLine;
@@ -42,7 +42,7 @@ void VirtioBlkStop(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 void VirtioBlkRead(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 {
 	DPrintF("Inside VirtioBlkRead!\n");
-	VirtioBlk *vb = &(VirtioBlkBase->vb);
+	VirtioBlk *vb = &(((struct VirtioBlkUnit*)ioreq->io_Unit)->vb);
 	UINT32 ipl;
 	ipl = Disable();
 	if(((struct VirtioBlkRequest*)ioreq)->sector_num >=
@@ -71,7 +71,7 @@ void VirtioBlkRead(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 void VirtioBlkWrite(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 {
 	DPrintF("Inside VirtioBlkWrite!\n");
-	VirtioBlk *vb = &(VirtioBlkBase->vb);
+	VirtioBlk *vb = &(((struct VirtioBlkUnit*)ioreq->io_Unit)->vb);
 	UINT32 ipl;
 	ipl = Disable();
 	if(((struct VirtioBlkRequest*)ioreq)->sector_num >=
@@ -98,7 +98,7 @@ void VirtioBlkWrite(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 
 void VirtioBlkGetDeviceInfo(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 {
-	VirtioBlk *vb = &(VirtioBlkBase->vb);
+	VirtioBlk *vb = &(((struct VirtioBlkUnit*)ioreq->io_Unit)->vb);
 	DPrintF("Inside VirtioBlkGetDeviceInfo!\n");
 	UINT32 ipl = Disable();
 	((struct VirtioBlkRequest*)ioreq)->info = vb->Info;

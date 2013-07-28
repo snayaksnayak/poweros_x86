@@ -9,9 +9,7 @@
 #include "lib_virtio.h"
 
 // Units
-//#define UNIT_DISK    0
-//#define UNIT_CD    1
-//#define UNIT_DVD    2
+#define VB_UNIT_MAX    4
 
 // non standard async commands
 #define VB_GETDEVICEINFO (CMD_NONSTD+0)
@@ -98,6 +96,12 @@ typedef struct VirtioBlk
 
 } VirtioBlk;
 
+struct VirtioBlkUnit
+{
+	struct Unit vb_unit;
+	struct VirtioBlk vb;
+};
+
 typedef struct VirtioBlkBase
 {
 	struct Device		Device;
@@ -108,9 +112,8 @@ typedef struct VirtioBlkBase
 	UINT32				VirtioBlkIRQ;
 	struct Interrupt	*VirtioBlkIntServer;
 
-	struct Unit unit;
-
-	struct VirtioBlk vb;
+	struct VirtioBlkUnit VirtioBlkUnit[VB_UNIT_MAX];
+	UINT32 NumAvailUnits;
 
 } VirtioBlkBase;
 

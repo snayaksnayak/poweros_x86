@@ -11,7 +11,9 @@
 char DevName[] = "virtio_blk.device";
 char Version[] = "\0$VER: virtio_blk.device 0.1 ("__DATE__")\r\n";
 
-static virtio_feature blkf[] = {
+#define MAX_VIRTIO_BLK_FEATURES 10
+
+static virtio_feature blkf[MAX_VIRTIO_BLK_FEATURES] = {
 	{ "barrier",	VIRTIO_BLK_F_BARRIER,	0,	0 	},
 	{ "sizemax",	VIRTIO_BLK_F_SIZE_MAX,	0,	0	},
 	{ "segmax",		VIRTIO_BLK_F_SEG_MAX,	0,	0	},
@@ -23,6 +25,8 @@ static virtio_feature blkf[] = {
 	{ "topology",	VIRTIO_BLK_F_TOPOLOGY,	0,	0	},
 	{ "idbytes",	VIRTIO_BLK_ID_BYTES,	0,	0	}
 };
+
+static virtio_feature blk_feature[VB_UNIT_MAX][MAX_VIRTIO_BLK_FEATURES];
 
 APTR virtio_blk_FuncTab[] =
 {
@@ -40,14 +44,8 @@ APTR virtio_blk_FuncTab[] =
 struct VirtioBlkBase *virtio_blk_InitDev(struct VirtioBlkBase *VirtioBlkBase, UINT32 *segList, struct SysBase *SysBase)
 {
 	VirtioBlkBase->VirtioBlk_SysBase = SysBase;
+	VirtioBlkBase->NumAvailUnits = 0;
 
-	// Initialise Unit Command Queue
-	NewList((struct List *)&VirtioBlkBase->unit.unit_MsgPort.mp_MsgList);
-	VirtioBlkBase->unit.unit_MsgPort.mp_Node.ln_Name = (STRPTR)DevName;
-	VirtioBlkBase->unit.unit_MsgPort.mp_Node.ln_Type = NT_MSGPORT;
-	VirtioBlkBase->unit.unit_MsgPort.mp_SigTask = NULL;
-
-//****************
 	struct ExpansionBase *ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0);
 	VirtioBlkBase->ExpansionBase = ExpansionBase;
 	if (VirtioBlkBase->ExpansionBase == NULL) {
@@ -64,70 +62,66 @@ struct VirtioBlkBase *virtio_blk_InitDev(struct VirtioBlkBase *VirtioBlkBase, UI
 	}
 
 
-	VirtioBlk *vb = &(VirtioBlkBase->vb);
-	VirtioDevice* vd = &(vb->vd);
-
-
-//1. setup the device.
-
-	//setup
-	VirtioBlk_setup(VirtioBlkBase, vb);
-
-	// Reset the device
-	VirtioWrite8(vd->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_RESET);
-
-	// Ack the device
-	VirtioWrite8(vd->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_ACK);
-
-
-//2. check if you can drive the device.
-
-	//driver supports these features
-	vd->features = blkf;
-	vd->num_features = sizeof(blkf) / sizeof(blkf[0]);
-
-	//exchange features
-	VirtioExchangeFeatures(vd);
-
-	// We know how to drive the device...
-	VirtioWrite8(vd->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_DRV);
-
-
-//3. be ready to go.
-
-	// virtio blk has only 1 queue
-	VirtioAllocateQueues(vd, VIRTIO_BLK_NUM_QUEUES);
-
-	//init queues
-	VirtioInitQueues(vd);
-
-	//Allocate memory for headers and status
-	VirtioBlk_alloc_phys_requests(VirtioBlkBase, vb);
-
-	//collect configuration
-	VirtioBlk_configuration(VirtioBlkBase, vb);
-
-	//Driver is ready to go!
-	VirtioWrite8(vd->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_DRV_OK);
-
-
-//4. start data transfer.
-
-/*
-	UINT32 sector_num;
-	UINT8 write = 0; //0 means "READ" a sector, 1 means "WRITE"
-	UINT8 buf[512]; //buffer to which data is read/write, fill this buffer to write into device
-
-	int i;
-	for (i=0; i < 8; i++) //8192 max
+	for(int unit_num = 0; unit_num < VB_UNIT_MAX ; unit_num++)
 	{
-		//lets try to read the sectors
-		sector_num = i;
-		memset(buf, 0, 512);
-		VirtioBlk_transfer(VirtioBlkBase, vb, sector_num, write, buf);
-	}
-*/
+		VirtioBlk *vb = &((VirtioBlkBase->VirtioBlkUnit[unit_num]).vb);
+		VirtioDevice* vd = &(vb->vd);
 
+		//1. setup the device.
+
+		//setup
+		int res = VirtioBlk_setup(VirtioBlkBase, vb, unit_num);
+
+		if(res != 1)
+			break;
+
+		// Reset the device
+		VirtioWrite8(vd->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_RESET);
+
+		// Ack the device
+		VirtioWrite8(vd->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_ACK);
+
+
+		//2. check if you can drive the device.
+
+		//driver supports these features
+		vd->features = &blk_feature[unit_num][0];
+		vd->num_features = MAX_VIRTIO_BLK_FEATURES;
+		memcpy(vd->features, blkf, sizeof(blkf));
+
+		//exchange features
+		VirtioExchangeFeatures(vd);
+
+		// We know how to drive the device...
+		VirtioWrite8(vd->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_DRV);
+
+
+		//3. be ready to go.
+
+		// virtio blk has only 1 queue
+		VirtioAllocateQueues(vd, VIRTIO_BLK_NUM_QUEUES);
+
+		//init queues
+		VirtioInitQueues(vd);
+
+		//Allocate memory for headers and status
+		VirtioBlk_alloc_phys_requests(VirtioBlkBase, vb);
+
+		//collect configuration
+		VirtioBlk_configuration(VirtioBlkBase, vb);
+
+		//Driver is ready to go!
+		VirtioWrite8(vd->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_DRV_OK);
+
+
+		// Initialise Unit Command Queue
+		NewList((struct List *)&VirtioBlkBase->VirtioBlkUnit[unit_num].vb_unit.unit_MsgPort.mp_MsgList);
+		VirtioBlkBase->VirtioBlkUnit[unit_num].vb_unit.unit_MsgPort.mp_Node.ln_Name = (STRPTR)DevName;
+		VirtioBlkBase->VirtioBlkUnit[unit_num].vb_unit.unit_MsgPort.mp_Node.ln_Type = NT_MSGPORT;
+		VirtioBlkBase->VirtioBlkUnit[unit_num].vb_unit.unit_MsgPort.mp_SigTask = NULL;
+
+		VirtioBlkBase->NumAvailUnits++;
+	}
 
 	return VirtioBlkBase;
 }
@@ -146,11 +140,6 @@ static const struct VirtioBlkBase VirtioBlkDevData =
 	.Device.dd_Library.lib_Sum = 0,
 	.Device.dd_Library.lib_IDString = (APTR)&Version[7],
 
-	.vb.Info.capacity = 0,
-	.vb.Info.blk_size = 0,
-	.vb.Info.geometry.cylinders = 0,
-	.vb.Info.geometry.heads = 0,
-	.vb.Info.geometry.sectors = 0
 };
 
 //Init table

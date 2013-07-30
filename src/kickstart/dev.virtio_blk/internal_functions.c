@@ -182,25 +182,35 @@ void VirtioBlk_transfer(VirtioBlkBase *VirtioBlkBase, VirtioBlk* vb, UINT32 sect
 	DPrintF("idx = %d\n", (vd->queues[0]).vring.avail->idx);
 
 
+
 	//fill into descriptor table
 	(vd->queues[0]).vring.desc[0].addr = (UINT32)&(vb->hdrs[0]);
 	(vd->queues[0]).vring.desc[0].len = sizeof(vb->hdrs[0]);
 	(vd->queues[0]).vring.desc[0].flags = VRING_DESC_F_NEXT;
 	(vd->queues[0]).vring.desc[0].next = 1;
 
-	(vd->queues[0]).vring.desc[1].addr = (UINT32)buf;
-	(vd->queues[0]).vring.desc[1].len = 512;
+
+
+	//fillup buffer info
+	(vd->queues[0]).vring.desc[1].addr = (UINT32)&buf[0];
+	(vd->queues[0]).vring.desc[1].len = 512*4;
 	(vd->queues[0]).vring.desc[1].flags = VRING_DESC_F_NEXT;
-	if(write == 0) //for reading sector, say that, this buffer is empty and writable
+	//for reading sector, say that, this buffer is empty and writable
+	if(write == 0)
 	{
 		(vd->queues[0]).vring.desc[1].flags |= VRING_DESC_F_WRITE;
 	}
 	(vd->queues[0]).vring.desc[1].next = 2;
 
+
+
+	//fill up status header
 	(vd->queues[0]).vring.desc[2].addr = (UINT32)&(vb->status[0]);
 	(vd->queues[0]).vring.desc[2].len = sizeof(vb->status[0]);
 	(vd->queues[0]).vring.desc[2].flags = VRING_DESC_F_WRITE;
 	(vd->queues[0]).vring.desc[2].next = 0;
+
+
 
 	//fill in available ring
 	(vd->queues[0]).vring.avail->flags = 0; //1 mean no interrupt needed, 0 means interrupt needed

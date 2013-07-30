@@ -982,7 +982,7 @@ void test_virtio_blk(APTR SysBase)
 	}
 
 	//lets open the device
-	INT32 ret = OpenDevice("virtio_blk.device", 1, (struct IORequest *)io, 0);
+	INT32 ret = OpenDevice("virtio_blk.device", 0, (struct IORequest *)io, 0);
 	if (ret != 0)
 	{
 		DPrintF("OpenDevice virtio_blk failed for virtio_blk unit 0\n");
@@ -998,9 +998,10 @@ void test_virtio_blk(APTR SysBase)
 	DPrintF("Return after starting the device\n");
 
 	UINT32 i;
-	for(i = 0; i < 8; i++) //8192 max
+	for(i = 0; i < 20; i++) //8192 max
 	{
 		// lets try a to read a sector from the device
+
 		io->node.io_Command = CMD_READ;
 		io->write = 0;
 
@@ -1008,8 +1009,8 @@ void test_virtio_blk(APTR SysBase)
 		//io->write = 1;
 
 		io->sector_num = i;
-		UINT8 buf[512];
-		memset(buf, 0x00, 512);
+		UINT8 buf[512*4];
+		memset(buf, 0, 512*4);
 		io->buf = buf;
 
 		// post request to the virtio device in sync way
@@ -1017,10 +1018,26 @@ void test_virtio_blk(APTR SysBase)
 		DoIO((struct IORequest *) io );
 		DPrintF("Return after reading a sector from the device\n");
 
-		DPrintF("buf[0]= %x\n", buf[0]);
-		DPrintF("buf[1]= %x\n", buf[1]);
-		DPrintF("buf[2]= %x\n", buf[2]);
-		DPrintF("buf[3]= %x\n", buf[3]);
+		int j=0;
+		DPrintF("buf[512*%d+0]= %x\n", j, buf[512*j+0]);
+		DPrintF("buf[512*%d+1]= %x\n", j, buf[512*j+1]);
+		DPrintF("buf[512*%d+2]= %x\n", j, buf[512*j+2]);
+		DPrintF("buf[512*%d+3]= %x\n", j, buf[512*j+3]);
+		j=1;
+		DPrintF("buf[512*%d+0]= %x\n", j, buf[512*j+0]);
+		DPrintF("buf[512*%d+1]= %x\n", j, buf[512*j+1]);
+		DPrintF("buf[512*%d+2]= %x\n", j, buf[512*j+2]);
+		DPrintF("buf[512*%d+3]= %x\n", j, buf[512*j+3]);
+		j=2;
+		DPrintF("buf[512*%d+0]= %x\n", j, buf[512*j+0]);
+		DPrintF("buf[512*%d+1]= %x\n", j, buf[512*j+1]);
+		DPrintF("buf[512*%d+2]= %x\n", j, buf[512*j+2]);
+		DPrintF("buf[512*%d+3]= %x\n", j, buf[512*j+3]);
+		j=3;
+		DPrintF("buf[512*%d+0]= %x\n", j, buf[512*j+0]);
+		DPrintF("buf[512*%d+1]= %x\n", j, buf[512*j+1]);
+		DPrintF("buf[512*%d+2]= %x\n", j, buf[512*j+2]);
+		DPrintF("buf[512*%d+3]= %x\n", j, buf[512*j+3]);
 	}
 	// Close device
 	DPrintF("Closing virtio_blk Device 0\n");

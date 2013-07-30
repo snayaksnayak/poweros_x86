@@ -44,10 +44,11 @@ void VirtioBlk_process_request(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *io
 	struct VirtioBlkRequest *head_req = (struct VirtioBlkRequest *)GetHead(&unit->unit_MsgPort.mp_MsgList);
 
 	VirtioBlk *vb = &(((struct VirtioBlkUnit*)ioreq->io_Unit)->vb);
-	UINT32 sector_num = head_req->sector_num;
+	UINT32 sector_start = head_req->sector_start;
+	UINT32 num_sectors = head_req->num_sectors;
 	UINT8 write = head_req->write;
 	UINT8 *buf = head_req->buf;
-	VirtioBlk_transfer(VirtioBlkBase, vb, sector_num, write, buf);
+	VirtioBlk_transfer(VirtioBlkBase, vb, sector_start, num_sectors, write, buf);
 	Enable(ipl);
 	return;
 }
@@ -151,7 +152,7 @@ int VirtioBlk_configuration(VirtioBlkBase *VirtioBlkBase, VirtioBlk *vb)
 }
 
 void test_mhz_delay(APTR, int);
-void VirtioBlk_transfer(VirtioBlkBase *VirtioBlkBase, VirtioBlk* vb, UINT32 sector_num, UINT8 write, UINT8* buf)
+void VirtioBlk_transfer(VirtioBlkBase *VirtioBlkBase, VirtioBlk* vb, UINT32 sector_start, UINT32 num_sectors, UINT8 write, UINT8* buf)
 {
 	struct LibVirtioBase* LibVirtioBase = VirtioBlkBase->LibVirtioBase;
 	VirtioDevice* vd = &(vb->vd);
@@ -173,12 +174,12 @@ void VirtioBlk_transfer(VirtioBlkBase *VirtioBlkBase, VirtioBlk* vb, UINT32 sect
 
 	//fill up sector
 	vb->hdrs[0].ioprio = 0;
-	vb->hdrs[0].sector = sector_num;
+	vb->hdrs[0].sector = sector_start;
 
 	//clear status
 	vb->status[0] = 1; //0 means success, 1 means error, 2 means unsupported
 
-	DPrintF("\n\n\nsector = %d\n", sector_num);
+	DPrintF("\n\n\nsector = %d\n", sector_start);
 	DPrintF("idx = %d\n", (vd->queues[0]).vring.avail->idx);
 
 
@@ -193,7 +194,7 @@ void VirtioBlk_transfer(VirtioBlkBase *VirtioBlkBase, VirtioBlk* vb, UINT32 sect
 
 	//fillup buffer info
 	(vd->queues[0]).vring.desc[1].addr = (UINT32)&buf[0];
-	(vd->queues[0]).vring.desc[1].len = 512*4;
+	(vd->queues[0]).vring.desc[1].len = 512*num_sectors;
 	(vd->queues[0]).vring.desc[1].flags = VRING_DESC_F_NEXT;
 	//for reading sector, say that, this buffer is empty and writable
 	if(write == 0)

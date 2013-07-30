@@ -13,19 +13,7 @@ void VirtioBlkInvalid(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 
 void VirtioBlkStart(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 {
-	VirtioBlk *vb = &(((struct VirtioBlkUnit*)ioreq->io_Unit)->vb);
-	VirtioDevice* vd = &(vb->vd);
-
-	UINT32 irq = vd->intLine;
 	DPrintF("Inside VirtioBlkStart!\n");
-
-	//collect device info for future uses
-	VirtioBlk_configuration(VirtioBlkBase, vb);
-
-	// start irq server after driver is ok
-	VirtioBlkBase->VirtioBlkIntServer = CreateIntServer(DevName, VIRTIO_BLK_INT_PRI, VirtioBlkIRQServer, VirtioBlkBase);
-	AddIntServer(irq, VirtioBlkBase->VirtioBlkIntServer);
-
 	VirtioBlk_end_command(VirtioBlkBase, 0, ioreq);
 	return;
 }
@@ -45,7 +33,9 @@ void VirtioBlkRead(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 	VirtioBlk *vb = &(((struct VirtioBlkUnit*)ioreq->io_Unit)->vb);
 	UINT32 ipl;
 	ipl = Disable();
-	if(((struct VirtioBlkRequest*)ioreq)->sector_num >=
+	if((((struct VirtioBlkRequest*)ioreq)->sector_start +
+	((struct VirtioBlkRequest*)ioreq)->num_sectors - 1)
+	>=
 	(vb->Info.geometry.cylinders *
 	vb->Info.geometry.heads *
 	(vb->Info.geometry.sectors + 1)))
@@ -74,7 +64,9 @@ void VirtioBlkWrite(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *ioreq)
 	VirtioBlk *vb = &(((struct VirtioBlkUnit*)ioreq->io_Unit)->vb);
 	UINT32 ipl;
 	ipl = Disable();
-	if(((struct VirtioBlkRequest*)ioreq)->sector_num >=
+	if((((struct VirtioBlkRequest*)ioreq)->sector_start +
+	((struct VirtioBlkRequest*)ioreq)->num_sectors - 1)
+	>=
 	(vb->Info.geometry.cylinders *
 	vb->Info.geometry.heads *
 	(vb->Info.geometry.sectors + 1)))

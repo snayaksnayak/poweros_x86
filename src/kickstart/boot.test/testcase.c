@@ -1008,7 +1008,8 @@ void test_virtio_blk(APTR SysBase)
 		//io->node.io_Command = CMD_WRITE;
 		//io->write = 1;
 
-		io->sector_num = i;
+		io->sector_start = i;
+		io->num_sectors = 4;
 		UINT8 buf[512*4];
 		memset(buf, 0, 512*4);
 		io->buf = buf;

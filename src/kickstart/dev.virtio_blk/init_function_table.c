@@ -113,6 +113,12 @@ struct VirtioBlkBase *virtio_blk_InitDev(struct VirtioBlkBase *VirtioBlkBase, UI
 		//Driver is ready to go!
 		VirtioWrite8(vd->io_addr, VIRTIO_DEV_STATUS_OFFSET, VIRTIO_STATUS_DRV_OK);
 
+		//collect device info for future uses
+		VirtioBlk_configuration(VirtioBlkBase, vb);
+
+		// start irq server after driver is ok
+		VirtioBlkBase->VirtioBlkIntServer = CreateIntServer(DevName, VIRTIO_BLK_INT_PRI, VirtioBlkIRQServer, VirtioBlkBase);
+		AddIntServer(vd->intLine, VirtioBlkBase->VirtioBlkIntServer);
 
 		// Initialise Unit Command Queue
 		NewList((struct List *)&VirtioBlkBase->VirtioBlkUnit[unit_num].vb_unit.unit_MsgPort.mp_MsgList);
@@ -120,6 +126,7 @@ struct VirtioBlkBase *virtio_blk_InitDev(struct VirtioBlkBase *VirtioBlkBase, UI
 		VirtioBlkBase->VirtioBlkUnit[unit_num].vb_unit.unit_MsgPort.mp_Node.ln_Type = NT_MSGPORT;
 		VirtioBlkBase->VirtioBlkUnit[unit_num].vb_unit.unit_MsgPort.mp_SigTask = NULL;
 
+		//save number of available units
 		VirtioBlkBase->NumAvailUnits++;
 	}
 

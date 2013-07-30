@@ -78,7 +78,8 @@ struct VirtioBlkRequest
 {
     struct IOStdReq node;
     struct VirtioBlkDeviceInfo info;
-    UINT32 sector_num;
+    UINT32 sector_start;
+    UINT32 num_sectors;
     UINT8 write;
     UINT8* buf;
 };
@@ -158,7 +159,7 @@ void VirtioBlk_process_request(VirtioBlkBase *VirtioBlkBase, struct IOStdReq *io
 int VirtioBlk_setup(VirtioBlkBase *VirtioBlkBase,VirtioBlk *vb, INT32 unit_num);
 int VirtioBlk_alloc_phys_requests(VirtioBlkBase *VirtioBlkBase,VirtioBlk *vb);
 int VirtioBlk_configuration(VirtioBlkBase *VirtioBlkBase, VirtioBlk *vb);
-void VirtioBlk_transfer(VirtioBlkBase *VirtioBlkBase, VirtioBlk* vb, UINT32 sector_num, UINT8 write, UINT8* buf);
+void VirtioBlk_transfer(VirtioBlkBase *VirtioBlkBase, VirtioBlk* vb, UINT32 sector_start, UINT32 num_sectors, UINT8 write, UINT8* buf);
 
 
 //irq handler

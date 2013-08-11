@@ -76,14 +76,14 @@ $(OBJDIR)/kernel.img: $(OBJDIR)/kernel.bin
 	#${STRIP} $<
 
 $(OBJDIR)/kernel.bin: arch_x86.ld $(OBJS)
-	${LD} ${LDFLAGS} $(OBJS) -Map bin/kernel.map -o $@ -T arch_x86.ld
+	${LD} -r ${LDFLAGS} $(OBJS) -Map bin/kernel.map -o $@ -T arch_x86.ld
 
 clean:
 	rm -rf $(OBJDIR)
 
 buildrepo:
 	$(call make-repo)
-	
+
 vmware:
 	qemu-img convert -f raw harddisk.img -O vmdk kernel.vmdk
 	cp kernel.vmdk ~/vmware/Other/Other.vmdk

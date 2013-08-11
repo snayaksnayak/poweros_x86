@@ -89,4 +89,8 @@ if you want to undo things (after you do a merge and before commiting it) do
 	#git reset --merge
 	#git clean -dxf
 
+if you delete a tracked file from git, it shows, that file as deleted. You have to do the following to commit it.
+	#git rm a.txt
+
+
 

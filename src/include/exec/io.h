@@ -33,8 +33,8 @@ typedef struct IOStdReq {
 } IOStdReq, *pIOStdReq;
 
 /* library vector offsets for device reserved vectors */
-#define DEV_BEGINIO	(-20)
-#define DEV_ABORTIO	(-24)
+#define DEV_BEGINIO	(5)
+#define DEV_ABORTIO	(6)
 
 /* io_Flags defined bits */
 #define IOB_QUICK	0

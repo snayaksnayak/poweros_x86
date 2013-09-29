@@ -124,7 +124,7 @@ static void WaitTask(SysBase *SysBase, struct Task *Task)
 	//Enable Taskswitch Temporarily (if the user called us in a forbid). It will be redone by the Schedule() when coming back
 	SysBase->TDNestCnt  = -1;
 
-	//if (Task->Switch) Task->Switch(SysBase);
+	if (Task->Switch) Task->Switch(SysBase);
 	AddHead(&SysBase->TaskWait, &Task->Node);
 	Task->State = WAIT;
 	SysBase->thisTask = NULL;

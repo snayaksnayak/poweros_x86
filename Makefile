@@ -1,6 +1,5 @@
 ARCH =i586-elf-
 CC = ${ARCH}gcc
-CPP = ${ARCH}g++
 AS = ${ARCH}as
 LD = ${ARCH}ld
 AR = ${ARCH}ar
@@ -76,8 +75,10 @@ $(OBJDIR)/kernel.img: $(OBJDIR)/kernel.bin
 	#${STRIP} $<
 
 $(OBJDIR)/kernel.bin: arch_x86.ld $(OBJS)
+	#MUST use -r to make poweros kernel.bin a relocatable one so that virtio can link with this to generate final kernel.bin.
+	#DONT use -r when poweros kernel.bin needs to boot without virtio, then it need not be relocatable.
 	${LD} -r ${LDFLAGS} $(OBJS) -Map bin/kernel.map -o $@ -T arch_x86.ld
-
+	
 clean:
 	rm -rf $(OBJDIR)
 
